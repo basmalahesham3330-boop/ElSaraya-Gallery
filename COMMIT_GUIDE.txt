@@ -1,0 +1,110 @@
+=====================================================
+COMMIT GUIDE - Dashboard Stabilization Phase
+=====================================================
+
+CURRENTLY STAGED FILES (ready to commit):
+✓ app/core/workflow.py
+✓ app/schemas/payment.py
+✓ app/schemas/dashboard.py
+✓ app/services/dashboard.py
+✓ app/api/v1/jobs.py
+✓ app/services/job.py
+✓ frontend/src/types/dashboard.ts
+✓ frontend/src/components/dashboard/KPIGrid.tsx
+✓ frontend/src/components/dashboard/KPICard.tsx
+✓ frontend/src/i18n/translations.ts
+
+=====================================================
+SINGLE COMMIT OPTION (RECOMMENDED)
+=====================================================
+
+git commit -m "fix: stabilize dashboard KPIs and payment creation
+
+This commit addresses critical issues found during stabilization phase:
+
+1. Payment Creation (HTTP 422)
+   - Remove job_id from PaymentCreate schema (comes from URL path)
+   - Fixes: POST /jobs/{job_id}/payments now succeeds
+
+2. Dashboard KPI Mismatch
+   - Create centralized workflow mapping (app/core/workflow.py)
+   - Expand KPIs from 6 to 18 fields matching all workflow stages
+   - Rename fields: quotations_waiting_response → pending_quotations,
+     jobs_delayed → delayed_projects
+   - Calculate KPIs FROM pipeline (single source of truth)
+   - Add graceful database fallback for development
+
+3. Frontend React Crash
+   - Fix TypeScript interface field name mismatches
+   - Update KPIGrid to use correct field names
+   - Add defensive type checking in KPICard component
+   - Add missing translation keys
+
+4. Workflow Stage Filtering
+   - Add workflow_stage parameter to GET /api/v1/jobs
+   - Enables KPI click-through filtering
+
+Results:
+✓ Dashboard loads without errors
+✓ All KPIs match Pipeline Board exactly
+✓ Payment creation works
+✓ Type-safe frontend
+✓ Graceful degradation without database
+
+Files: 10 modified, 1 added"
+
+=====================================================
+OR MULTIPLE COMMITS OPTION
+=====================================================
+
+## Commit 1: Core Infrastructure
+git reset
+git add app/core/workflow.py
+git commit -m "feat(core): add centralized workflow stage mapping
+
+Single source of truth for job-to-workflow-stage mapping.
+Ensures consistency between Dashboard KPIs and Pipeline Board."
+
+## Commit 2: Backend Fixes
+git add app/schemas/payment.py app/schemas/dashboard.py app/services/dashboard.py app/api/v1/jobs.py app/services/job.py
+git commit -m "fix(backend): expand dashboard KPIs and fix payment creation
+
+- Remove job_id from PaymentCreate schema (HTTP 422 fix)
+- Add 12 new KPI fields (18 total) to dashboard
+- Rename KPI fields for consistency
+- Add workflow_stage filtering to jobs API
+- Add database fallback for development"
+
+## Commit 3: Frontend Fixes
+git add frontend/src/types/dashboard.ts frontend/src/components/dashboard/KPIGrid.tsx frontend/src/components/dashboard/KPICard.tsx frontend/src/i18n/translations.ts
+git commit -m "fix(frontend): correct dashboard KPI field name mismatches
+
+Fix React TypeError by updating TypeScript interface to match
+backend API response. Add defensive type checking."
+
+=====================================================
+VERIFICATION AFTER COMMIT
+=====================================================
+
+✓ Backend: curl http://127.0.0.1:8000/api/v1/dashboard
+  Should return HTTP 200 with 18 KPI fields
+
+✓ Frontend: npm run dev
+  Dashboard should load without console errors
+
+✓ Payment: POST /jobs/{job_id}/payments
+  Should return HTTP 201 (not 422)
+
+=====================================================
+CLEANUP (Optional - after committing)
+=====================================================
+
+These files can be deleted:
+- COMMIT_MESSAGES.md
+- COMMIT_GUIDE.txt
+
+Command:
+git rm COMMIT_MESSAGES.md COMMIT_GUIDE.txt
+git commit -m "chore: remove commit guide files"
+
+=====================================================

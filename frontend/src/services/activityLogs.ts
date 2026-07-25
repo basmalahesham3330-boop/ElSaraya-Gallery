@@ -4,10 +4,15 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000
 
 export const activityLogsApi = {
   /**
-   * Get activity logs for a specific job
+   * Get activity logs for a specific job with optional limit
    */
-  getByJobId: async (jobId: string): Promise<ActivityLog[]> => {
-    const response = await fetch(`${API_BASE_URL}/api/v1/activity-logs?job_id=${jobId}`, {
+  getByJobId: async (jobId: string, limit?: number): Promise<ActivityLog[]> => {
+    const params = new URLSearchParams({ job_id: jobId });
+    if (limit) {
+      params.append('limit', limit.toString());
+    }
+    
+    const response = await fetch(`${API_BASE_URL}/api/v1/activity-logs?${params}`, {
       headers: {
         'Content-Type': 'application/json',
       },

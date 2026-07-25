@@ -38,19 +38,19 @@ export default function Payments() {
   // Fetch all jobs to get payments
   const { data: jobsData } = useQuery({
     queryKey: ['jobs', 'all'],
-    queryFn: () => jobsApi.getAll({ limit: 1000 }),
+    queryFn: () => jobsApi.getAll({ limit: 200 }),
   });
 
   // Fetch quotations
   const { data: quotationsData } = useQuery({
     queryKey: ['quotations', 'all'],
-    queryFn: () => quotationsApi.getAll({ limit: 1000 }),
+    queryFn: () => quotationsApi.getAll({ limit: 200 }),
   });
 
   // Fetch customers
   const { data: customersData } = useQuery({
     queryKey: ['customers'],
-    queryFn: () => customersApi.getAll({ limit: 1000 }),
+    queryFn: () => customersApi.getAll({ limit: 200 }),
   });
 
   // Fetch payments for each job
@@ -143,13 +143,11 @@ export default function Payments() {
       const jobPayments = await paymentsApi.getJobPayments(selectedJobId, { limit: 100 });
       const paymentOrder = jobPayments.items.length + 1;
 
-      await paymentsApi.create({
-        job_id: selectedJobId,
-        payment_order: paymentOrder,
+      await paymentsApi.create(selectedJobId, {
         payment_type: paymentType,
         payment_method: paymentMethod,
-        percentage: parseFloat(percentage),
-        amount: parseFloat(amount),
+        percentage: parseFloat(percentage) || 0,
+        amount: parseFloat(amount) || 0,
         due_date: dueDate || undefined,
         notes: paymentNotes || undefined,
       });
@@ -271,7 +269,7 @@ export default function Payments() {
             </label>
             <Select
               value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
+              onChange={(value) => setStatusFilter(value)}
             >
               <option value="">{t('payments.allStatuses')}</option>
               {paymentStatuses.map(status => (
@@ -288,7 +286,7 @@ export default function Payments() {
             </label>
             <Select
               value={typeFilter}
-              onChange={(e) => setTypeFilter(e.target.value)}
+              onChange={(value) => setTypeFilter(value)}
             >
               <option value="">{t('payments.allTypes')}</option>
               {paymentTypes.map(type => (
@@ -305,7 +303,7 @@ export default function Payments() {
             </label>
             <Select
               value={methodFilter}
-              onChange={(e) => setMethodFilter(e.target.value)}
+              onChange={(value) => setMethodFilter(value)}
             >
               <option value="">{t('payments.allMethods')}</option>
               {paymentMethods.map(method => (
@@ -412,7 +410,7 @@ export default function Payments() {
             </label>
             <Select
               value={selectedJobId}
-              onChange={(e) => setSelectedJobId(e.target.value)}
+              onChange={(value) => setSelectedJobId(value)}
               required
             >
               <option value="">{t('projects.selectProject')}</option>
@@ -435,7 +433,7 @@ export default function Payments() {
               </label>
               <Select
                 value={paymentType}
-                onChange={(e) => setPaymentType(e.target.value as PaymentType)}
+                onChange={(value) => setPaymentType(value as PaymentType)}
                 required
               >
                 {paymentTypes.map(type => (
@@ -452,7 +450,7 @@ export default function Payments() {
               </label>
               <Select
                 value={paymentMethod}
-                onChange={(e) => setPaymentMethod(e.target.value as PaymentMethod)}
+                onChange={(value) => setPaymentMethod(value as PaymentMethod)}
                 required
               >
                 {paymentMethods.map(method => (

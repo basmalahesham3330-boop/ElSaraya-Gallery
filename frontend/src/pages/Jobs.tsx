@@ -43,7 +43,7 @@ export default function JobsNew() {
     }));
   }, [projects, paymentsMap]);
 
-  // Filter projects
+  // Filter projects - memoized
   const filteredProjects = useMemo(() => {
     let filtered = enrichedProjects;
 
@@ -70,7 +70,7 @@ export default function JobsNew() {
     return filtered;
   }, [enrichedProjects, statusFilter, searchTerm]);
 
-  // Sort projects
+  // Sort projects - memoized  
   const sortedProjects = useMemo(() => {
     const sorted = [...filteredProjects];
 
@@ -87,15 +87,23 @@ export default function JobsNew() {
       case 'lowest_value':
         sorted.sort((a, b) => parseFloat(a.quotation.final_price) - parseFloat(b.quotation.final_price));
         break;
-      case 'remaining_balance':
+      case 'remaining_balance': {
+        // Pre-calculate remaining balances for better performance
+        const balances = new Map();
+        sorted.forEach(p => {
+          const total = parseFloat(p.quotation.final_price);
+          const paid = p.payments
+            .filter(pay => pay.status === 'paid')
+            .reduce((sum, pay) => sum + parseFloat(pay.amount), 0);
+          balances.set(p.job.id, total - paid);
+        });
         sorted.sort((a, b) => {
-          const remainingA = parseFloat(a.quotation.final_price) - 
-            a.payments.filter(p => p.status === 'paid').reduce((sum, p) => sum + parseFloat(p.amount), 0);
-          const remainingB = parseFloat(b.quotation.final_price) - 
-            b.payments.filter(p => p.status === 'paid').reduce((sum, p) => sum + parseFloat(p.amount), 0);
+          const remainingA = balances.get(a.job.id) || 0;
+          const remainingB = balances.get(b.job.id) || 0;
           return remainingB - remainingA;
         });
         break;
+      }
       case 'alphabetical':
         sorted.sort((a, b) => a.customer.full_name.localeCompare(b.customer.full_name, 'ar'));
         break;
@@ -115,7 +123,7 @@ export default function JobsNew() {
   }, []);
 
   const handleCreateProject = useCallback(() => {
-    navigate('/quotations/new');
+    navigate('/projects/new');
   }, [navigate]);
 
   const activeFiltersCount = (statusFilter !== 'all' ? 1 : 0) + (searchTerm ? 1 : 0);

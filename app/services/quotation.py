@@ -14,7 +14,7 @@ in the same transaction to ensure data consistency.
 from __future__ import annotations
 
 import uuid
-from datetime import date, datetime
+from datetime import date, datetime, timezone
 from decimal import Decimal
 from typing import Any
 
@@ -28,6 +28,11 @@ from app.core.exceptions import (
     EntityNotFoundError,
     ValidationError,
 )
+
+
+def _utcnow() -> datetime:
+    """Return current UTC time (timezone-aware)."""
+    return datetime.now(tz=timezone.utc)
 from app.core.query import Pagination, Sorting
 from app.enums.job import JobStatus
 from app.enums.quotation import QuotationStatus
@@ -258,8 +263,8 @@ class QuotationService(BaseService[Quotation]):
             id=uuid.uuid4(),
             quotation_id=quotation.id,
             status=JobStatus.PENDING,
-            created_at=datetime.utcnow(),
-            updated_at=datetime.utcnow(),
+            created_at=_utcnow(),
+            updated_at=_utcnow(),
         )
         self._session.add(job)
         await self._session.flush()  # Get ID but don't commit yet
@@ -270,8 +275,8 @@ class QuotationService(BaseService[Quotation]):
             job_id=job.id,
             action="job_created",
             description="Job automatically created from approved quotation",
-            created_at=datetime.utcnow(),
-            updated_at=datetime.utcnow(),
+            created_at=_utcnow(),
+            updated_at=_utcnow(),
         )
         self._session.add(activity)
         await self._session.flush()

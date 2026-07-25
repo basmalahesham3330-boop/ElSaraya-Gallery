@@ -135,7 +135,7 @@ export default function Projects() {
               </label>
               <Select
                 value={statusFilter}
-                onChange={(e) => setStatusFilter((e.target as HTMLSelectElement).value as JobStatus | 'all')}
+                onChange={(value) => setStatusFilter(value as JobStatus | 'all')}
               >
                 <option value="all">{t('projects.allStatuses')}</option>
                 <option value="pending">{t('jobStatus.pending')}</option>

@@ -1,13 +1,14 @@
 """
 Activity Logs API endpoints.
 """
-from typing import Optional
+from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Query
-from sqlalchemy.orm import Session
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api import deps
+from app.db.session import get_db
 from app.models.activity_log import ActivityLog
 from app.schemas.activity_log import ActivityLogRead, ActivityLogListResponse
 
@@ -22,28 +23,32 @@ router = APIRouter(prefix="/activity-logs", tags=["Activity Logs"])
         "Retrieve activity logs with optional filters.\n\n"
         "**Query Parameters**:\n"
         "- job_id: Filter by job\n"
-        "- quotation_id: Filter by quotation\n"
         "- limit/offset: Pagination\n\n"
         "**Ordering**: Most recent first (created_at DESC)"
     ),
 )
-def list_activity_logs(
-    db: Session = Depends(deps.get_db),
-    job_id: Optional[UUID] = Query(None, description="Filter by job ID"),
-    quotation_id: Optional[UUID] = Query(None, description="Filter by quotation ID"),
-    limit: int = Query(100, ge=1, le=100, description="Max items"),
-    offset: int = Query(0, ge=0, description="Skip items"),
+async def list_activity_logs(
+    db: Annotated[AsyncSession, Depends(get_db)],
+    job_id: Annotated[UUID | None, Query(description="Filter by job ID")] = None,
+    limit: Annotated[int, Query(ge=1, le=200, description="Max items")] = 100,
+    offset: Annotated[int, Query(ge=0, description="Skip items")] = 0,
 ):
     """List activity logs with optional filters."""
-    query = db.query(ActivityLog)
+    stmt = select(ActivityLog)
     
     if job_id:
-        query = query.filter(ActivityLog.job_id == job_id)
-    if quotation_id:
-        query = query.filter(ActivityLog.quotation_id == quotation_id)
+        stmt = stmt.where(ActivityLog.job_id == job_id)
     
-    total = query.count()
-    items = query.order_by(ActivityLog.created_at.desc()).offset(offset).limit(limit).all()
+    # Count total
+    from sqlalchemy import func
+    count_stmt = select(func.count()).select_from(stmt.subquery())
+    count_result = await db.execute(count_stmt)
+    total = count_result.scalar_one()
+    
+    # Get items
+    stmt = stmt.order_by(ActivityLog.created_at.desc()).offset(offset).limit(limit)
+    result = await db.execute(stmt)
+    items = result.scalars().all()
     
     return ActivityLogListResponse(
         items=[ActivityLogRead.model_validate(i) for i in items],
@@ -59,15 +64,18 @@ def list_activity_logs(
     summary="Get activity log",
     description="Retrieve a single activity log entry by ID.",
 )
-def get_activity_log(
+async def get_activity_log(
     activity_log_id: UUID,
-    db: Session = Depends(deps.get_db),
+    db: Annotated[AsyncSession, Depends(get_db)],
 ):
     """Get activity log by ID."""
-    from app.core.exceptions import NotFoundException
+    from app.core.exceptions import EntityNotFoundError
     
-    log = db.query(ActivityLog).filter(ActivityLog.id == activity_log_id).first()
+    stmt = select(ActivityLog).where(ActivityLog.id == activity_log_id)
+    result = await db.execute(stmt)
+    log = result.scalar_one_or_none()
+    
     if not log:
-        raise NotFoundException(f"Activity log {activity_log_id} not found")
+        raise EntityNotFoundError(f"Activity log {activity_log_id} not found")
     
     return ActivityLogRead.model_validate(log)

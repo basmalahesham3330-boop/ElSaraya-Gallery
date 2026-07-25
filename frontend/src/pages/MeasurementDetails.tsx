@@ -73,6 +73,8 @@ export default function MeasurementDetails() {
     onSuccess: () => {
       toast.success(t('success.updated'));
       queryClient.invalidateQueries({ queryKey: ['measurements', measurementId] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+      queryClient.invalidateQueries({ queryKey: ['jobs'] });
       setIsEditingMeasurement(false);
     },
     onError: () => {
@@ -86,6 +88,8 @@ export default function MeasurementDetails() {
     onSuccess: () => {
       toast.success(t('success.created'));
       queryClient.invalidateQueries({ queryKey: ['measurement-items', measurementId] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+      queryClient.invalidateQueries({ queryKey: ['jobs'] });
       setIsAddItemModalOpen(false);
       resetItemForm();
     },
@@ -101,6 +105,8 @@ export default function MeasurementDetails() {
     onSuccess: () => {
       toast.success(t('success.updated'));
       queryClient.invalidateQueries({ queryKey: ['measurement-items', measurementId] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+      queryClient.invalidateQueries({ queryKey: ['jobs'] });
       setEditingItemId(null);
       resetItemForm();
     },

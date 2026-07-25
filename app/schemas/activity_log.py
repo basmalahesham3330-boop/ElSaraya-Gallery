@@ -9,10 +9,9 @@ class ActivityLogRead(BaseModel):
     """Activity log response."""
 
     id: UUID
-    job_id: UUID | None
-    quotation_id: UUID | None
+    job_id: UUID
     action: str
-    description: str
+    description: str | None
     created_at: datetime
 
     model_config = {"from_attributes": True}

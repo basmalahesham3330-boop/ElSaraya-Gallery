@@ -40,7 +40,6 @@ coverage.xml
 .gitattributes
 
 # ── Docker ────────────────────────────────────────────────────────────────────
-Dockerfile
 docker-compose*.yml
 .dockerignore
 
@@ -55,4 +54,5 @@ Thumbs.db
 # ── Docs / misc ───────────────────────────────────────────────────────────────
 docs/
 *.md
+!README.md
 LICENSE

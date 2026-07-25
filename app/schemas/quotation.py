@@ -4,14 +4,10 @@ from __future__ import annotations
 import uuid
 from datetime import date, datetime
 from decimal import Decimal
-from typing import TYPE_CHECKING
 
 from pydantic import BaseModel, ConfigDict, Field
 
 from app.enums.quotation import QuotationStatus
-
-if TYPE_CHECKING:
-    from app.schemas.job import JobRead
 
 
 class QuotationItemCreate(BaseModel):
@@ -193,7 +189,7 @@ class QuotationWithJobResponse(BaseModel):
     """
 
     quotation: QuotationRead
-    job: "JobRead | None" = Field(
+    job: JobRead | None = Field(
         default=None,
         description="Job created when quotation was approved (null for other status changes)",
     )
@@ -201,5 +197,9 @@ class QuotationWithJobResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
-# Rebuild forward references after JobRead is imported
+# Import at end to avoid circular dependency
+from app.schemas.job import JobRead  # noqa: E402
+
+# Rebuild model to resolve forward references
 QuotationWithJobResponse.model_rebuild()
+

@@ -6,6 +6,7 @@ import Dashboard from './pages/Dashboard';
 import Customers from './pages/Customers';
 import Products from './pages/Products';
 import Jobs from './pages/Jobs';
+import AddProject from './pages/AddProject';
 import ProjectDetails from './pages/ProjectDetails';
 import MeasurementDetails from './pages/MeasurementDetails';
 import Payments from './pages/Payments';
@@ -14,8 +15,11 @@ const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       refetchOnWindowFocus: false,
+      refetchOnMount: false,
+      refetchOnReconnect: false,
       retry: 1,
-      staleTime: 5 * 60 * 1000,
+      staleTime: 5 * 60 * 1000, // 5 minutes default
+      cacheTime: 10 * 60 * 1000, // 10 minutes cache
     },
   },
 });
@@ -43,9 +47,11 @@ function App() {
             
             {/* Projects routes */}
             <Route path="/jobs" element={<Jobs />} />
+            <Route path="/jobs/new" element={<AddProject />} />
             <Route path="/jobs/:id" element={<ProjectDetails />} />
             <Route path="/jobs/:jobId/measurements/:measurementId" element={<MeasurementDetails />} />
             <Route path="/projects" element={<Jobs />} />
+            <Route path="/projects/new" element={<AddProject />} />
             <Route path="/projects/:id" element={<ProjectDetails />} />
             
             <Route path="/payments" element={<Payments />} />

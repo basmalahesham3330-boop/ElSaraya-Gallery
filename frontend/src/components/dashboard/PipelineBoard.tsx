@@ -7,40 +7,42 @@ interface PipelineBoardProps {
 }
 
 const columnColors = {
-  pending: 'bg-gray-500',
-  quotation: 'bg-yellow-600',
   measurement: 'bg-blue-600',
+  quotation: 'bg-yellow-600',
   depositReceived: 'bg-green-600',
   manufacturing: 'bg-purple-600',
   installation: 'bg-orange-600',
   completed: 'bg-gray-600',
+  postponed: 'bg-amber-600',
   rejected: 'bg-red-600',
 };
 
 export default function PipelineBoard({ pipeline }: PipelineBoardProps) {
   const { t } = useTranslation();
 
-  // Calculate pending jobs (jobs with 'pending' current_status)
-  const pendingJobs = pipeline.quotation.filter(job => job.current_status === 'pending');
+  // Dashboard shows 8 workflow columns as requested:
+  // 1. Measurement, 2. Quotation, 3. Deposit Paid, 4. Manufacturing,
+  // 5. Installation, 6. Completed, 7. Postponed, 8. Rejected
+  // Each job appears in exactly ONE column based on backend logic.
 
   return (
     <div className="bg-white rounded-lg shadow p-4">
       <h2 className="text-lg font-semibold text-gray-900 mb-4">{t('dashboard.pipeline.title')}</h2>
       
-      {/* Grid Layout: 4 columns on desktop, 2 on tablet, 1 on mobile, 2 rows */}
+      {/* Grid Layout: 4 columns per row */}
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
         {/* Row 1 */}
-        <PipelineColumn
-          title={t('dashboard.pipeline.quotation')}
-          count={pipeline.quotation.length}
-          color={columnColors.quotation}
-          jobs={pipeline.quotation}
-        />
         <PipelineColumn
           title={t('dashboard.pipeline.measurement')}
           count={pipeline.measurement.length}
           color={columnColors.measurement}
           jobs={pipeline.measurement}
+        />
+        <PipelineColumn
+          title={t('dashboard.pipeline.quotation')}
+          count={pipeline.quotation.length}
+          color={columnColors.quotation}
+          jobs={pipeline.quotation}
         />
         <PipelineColumn
           title={t('dashboard.pipeline.depositReceived')}
@@ -69,16 +71,16 @@ export default function PipelineBoard({ pipeline }: PipelineBoardProps) {
           jobs={pipeline.completed}
         />
         <PipelineColumn
+          title={t('dashboard.pipeline.postponed')}
+          count={pipeline.postponed?.length || 0}
+          color={columnColors.postponed}
+          jobs={pipeline.postponed || []}
+        />
+        <PipelineColumn
           title={t('dashboard.pipeline.rejected')}
           count={pipeline.rejected.length}
           color={columnColors.rejected}
           jobs={pipeline.rejected}
-        />
-        <PipelineColumn
-          title={t('dashboard.pipeline.pending')}
-          count={pendingJobs.length}
-          color={columnColors.pending}
-          jobs={pendingJobs}
         />
       </div>
     </div>

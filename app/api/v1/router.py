@@ -6,6 +6,7 @@ Add new feature routers here as the application grows.
 from fastapi import APIRouter
 
 from app.api.v1 import (
+    activity_logs,
     customers,
     dashboard,
     health,
@@ -29,3 +30,4 @@ router.include_router(quotations.router)
 router.include_router(jobs.router)
 router.include_router(measurements.router)
 router.include_router(payments.router)
+router.include_router(activity_logs.router)

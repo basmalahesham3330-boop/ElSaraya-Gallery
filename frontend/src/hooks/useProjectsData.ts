@@ -17,17 +17,20 @@ export function useProjectsData() {
   // Fetch all data in parallel
   const { data: jobsData, isLoading: isLoadingJobs } = useQuery({
     queryKey: ['jobs'],
-    queryFn: () => jobsApi.getAll({ limit: 500, sort_by: 'created_at', sort_order: 'desc' }),
+    queryFn: () => jobsApi.getAll({ limit: 100, sort_by: 'created_at', sort_order: 'desc' }),
+    staleTime: 2 * 60 * 1000, // 2 minutes
   });
 
   const { data: quotationsData, isLoading: isLoadingQuotations } = useQuery({
     queryKey: ['quotations', 'all'],
-    queryFn: () => quotationsApi.getAll({ limit: 1000 }),
+    queryFn: () => quotationsApi.getAll({ limit: 200 }),
+    staleTime: 2 * 60 * 1000, // 2 minutes
   });
 
   const { data: customersData, isLoading: isLoadingCustomers } = useQuery({
     queryKey: ['customers'],
-    queryFn: () => customersApi.getAll({ limit: 1000 }),
+    queryFn: () => customersApi.getAll({ limit: 200 }),
+    staleTime: 5 * 60 * 1000, // 5 minutes - customers change less frequently
   });
 
   const jobs = jobsData?.items || [];

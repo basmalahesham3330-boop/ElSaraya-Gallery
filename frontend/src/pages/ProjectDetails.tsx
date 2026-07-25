@@ -5,7 +5,7 @@ import { toast } from 'sonner';
 import { 
   ArrowLeft, Edit, Plus, Calendar, Package, Wrench, Truck, CheckCircle, 
   Check, User, Phone, MapPin, FileText, DollarSign, Printer, MoreHorizontal,
-  X, AlertCircle, Clock
+  X, AlertCircle, Clock, Save, ExternalLink
 } from 'lucide-react';
 import { useTranslation } from '../i18n/useTranslation';
 import { jobsApi } from '../services/jobs';
@@ -26,6 +26,7 @@ import PaymentStatusBadge from '../components/PaymentStatusBadge';
 import ConfirmationDialog from '../components/ConfirmationDialog';
 import CollapsibleSection from '../components/CollapsibleSection';
 import InlineEdit from '../components/InlineEdit';
+import ProjectActivityTimeline from '../components/activity-timeline/ProjectActivityTimeline';
 import type { 
   Job, JobStatus, Quotation, QuotationStatus, QuotationItem,
   Measurement, Payment, PaymentType, PaymentMethod 
@@ -52,15 +53,21 @@ export default function ProjectDetails() {
 
   // Collapsible section states
   const [sectionsOpen, setSectionsOpen] = useState({
+    info: true,
+    dates: true,
     workflow: true,
     quotation: true,
     measurements: true,
     payments: true,
     timeline: false,
-    activity: false,
-    notes: false,
+    activity: true,
+    notes: true,
     documents: false,
   });
+
+  // Editable states
+  const [isEditingNotes, setIsEditingNotes] = useState(false);
+  const [editedNotes, setEditedNotes] = useState('');
 
   // Form states
   const [newStatus, setNewStatus] = useState<JobStatus | QuotationStatus>('pending');
@@ -69,6 +76,15 @@ export default function ProjectDetails() {
     measured_by: '',
     notes: '',
   });
+  const [measurementItems, setMeasurementItems] = useState<Array<{
+    id: string;
+    piece_name: string;
+    piece_number: string;
+    width: string;
+    height: string;
+    quantity: string;
+    notes: string;
+  }>>([]);
   const [paymentData, setPaymentData] = useState({
     payment_type: 'deposit' as PaymentType,
     payment_method: 'cash' as PaymentMethod,
@@ -141,17 +157,29 @@ export default function ProjectDetails() {
   const measurements = measurementsData?.items || [];
   const payments = paymentsData?.items || [];
 
-  const totalPaid = payments.filter(p => p.status === 'paid').reduce((sum, p) => sum + parseFloat(p.amount), 0);
-  const totalScheduled = payments.reduce((sum, p) => sum + parseFloat(p.amount), 0);
+  const totalPaid = payments.filter((p: Payment) => p.status === 'paid').reduce((sum: number, p: Payment) => sum + parseFloat(p.amount), 0);
+  const totalScheduled = payments.reduce((sum: number, p: Payment) => sum + parseFloat(p.amount), 0);
   const remainingBalance = totalScheduled - totalPaid;
   const paidPercentage = totalScheduled > 0 ? (totalPaid / totalScheduled) * 100 : 0;
 
   // Mutations
+  const updateJobMutation = useMutation({
+    mutationFn: (data: Partial<Job>) => jobsApi.update(job!.id, data),
+    onSuccess: () => {
+      toast.success(t('success.updated'));
+      queryClient.invalidateQueries({ queryKey: ['jobs', job?.id] });
+      queryClient.invalidateQueries({ queryKey: ['jobs'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+    },
+    onError: () => toast.error(t('errors.generic')),
+  });
+
   const updateJobStatusMutation = useMutation({
     mutationFn: (status: JobStatus) => jobsApi.updateStatus(job!.id, status),
     onSuccess: () => {
       toast.success(t('success.updated'));
       queryClient.invalidateQueries({ queryKey: ['jobs', job?.id] });
+      queryClient.invalidateQueries({ queryKey: ['jobs'] });
       queryClient.invalidateQueries({ queryKey: ['dashboard'] });
       setIsStatusModalOpen(false);
     },
@@ -160,11 +188,13 @@ export default function ProjectDetails() {
 
   const updateQuotationStatusMutation = useMutation({
     mutationFn: (status: QuotationStatus) => quotationsApi.updateStatus(activeQuotation!.id, status),
-    onSuccess: (response) => {
+    onSuccess: () => {
       toast.success(t('success.updated'));
       queryClient.invalidateQueries({ queryKey: ['quotations'] });
       queryClient.invalidateQueries({ queryKey: ['jobs'] });
       queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+      queryClient.invalidateQueries({ queryKey: ['allPayments'] });
+      queryClient.invalidateQueries({ queryKey: ['payments'] });
       setIsStatusModalOpen(false);
       if (response.job) {
         navigate(`/jobs/${response.job.id}`);
@@ -179,6 +209,10 @@ export default function ProjectDetails() {
       toast.success(t('success.created'));
       refetchItems();
       queryClient.invalidateQueries({ queryKey: ['quotations'] });
+      queryClient.invalidateQueries({ queryKey: ['jobs'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+      queryClient.invalidateQueries({ queryKey: ['allPayments'] });
+      queryClient.invalidateQueries({ queryKey: ['payments'] });
       setIsAddItemModalOpen(false);
       setItemFormData({ product_id: '', quantity: 1, unit_price: '', description: '', notes: '' });
     },
@@ -192,29 +226,79 @@ export default function ProjectDetails() {
       toast.success(t('success.updated'));
       refetchItems();
       queryClient.invalidateQueries({ queryKey: ['quotations'] });
+      queryClient.invalidateQueries({ queryKey: ['jobs'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+      queryClient.invalidateQueries({ queryKey: ['allPayments'] });
+      queryClient.invalidateQueries({ queryKey: ['payments'] });
       setIsEditItemModalOpen(false);
     },
     onError: () => toast.error(t('errors.generic')),
   });
 
   const createMeasurementMutation = useMutation({
-    mutationFn: (data: typeof measurementData) => measurementsApi.create(job!.id, data),
-    onSuccess: (newMeasurement) => {
+    mutationFn: async (data: typeof measurementData) => {
+      // Create measurement first
+      const measurement = await measurementsApi.create(job!.id, data);
+      
+      // Then create all measurement items if any exist
+      if (measurementItems.length > 0 && quotation?.items) {
+        // Use first quotation item as default if exists
+        const defaultQuotationItemId = quotation.items[0]?.id;
+        
+        for (const item of measurementItems) {
+          if (defaultQuotationItemId) {
+            await measurementsApi.addItem(measurement.id, {
+              quotation_item_id: defaultQuotationItemId,
+              room_name: item.piece_name,
+              piece_number: item.piece_number,
+              width: item.width || undefined,
+              height: item.height || undefined,
+              quantity: parseInt(item.quantity) || 1,
+              notes: item.notes || undefined,
+            });
+          }
+        }
+      }
+      
+      return measurement;
+    },
+    onSuccess: () => {
       toast.success(t('success.created'));
       queryClient.invalidateQueries({ queryKey: ['measurements', job?.id] });
+      queryClient.invalidateQueries({ queryKey: ['jobs', job?.id] });
+      queryClient.invalidateQueries({ queryKey: ['jobs'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] });
       setIsAddMeasurementModalOpen(false);
       setMeasurementData({ visit_date: '', measured_by: '', notes: '' });
-      navigate(`/jobs/${job?.id}/measurements/${newMeasurement.id}`);
+      setMeasurementItems([]);
+      // DO NOT navigate - stay on current page
     },
-    onError: () => toast.error(t('errors.generic')),
+    onError: (error: any) => {
+      console.error('Measurement creation error:', error);
+      toast.error(error?.response?.data?.detail || t('errors.generic'));
+    },
   });
 
   const createPaymentMutation = useMutation({
-    mutationFn: (data: typeof paymentData) => paymentsApi.create(job!.id, data),
+    mutationFn: (data: typeof paymentData) => {
+      // Convert empty strings to proper values for backend
+      const payload = {
+        ...data,
+        percentage: data.percentage || '0',
+        amount: data.amount || '0',
+        due_date: data.due_date || undefined,
+        paid_date: data.paid_date || undefined,
+        notes: data.notes || undefined,
+      };
+      return paymentsApi.create(job!.id, payload);
+    },
     onSuccess: () => {
       toast.success(t('success.created'));
       queryClient.invalidateQueries({ queryKey: ['payments', job?.id] });
+      queryClient.invalidateQueries({ queryKey: ['jobs', job?.id] });
       queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+      queryClient.invalidateQueries({ queryKey: ['allPayments'] });
+      queryClient.invalidateQueries({ queryKey: ['jobs'] });
       setIsAddPaymentModalOpen(false);
       setPaymentData({
         payment_type: 'deposit',
@@ -226,19 +310,37 @@ export default function ProjectDetails() {
         notes: '',
       });
     },
-    onError: () => toast.error(t('errors.generic')),
+    onError: (error: any) => {
+      console.error('Payment creation error:', error);
+      toast.error(error?.response?.data?.detail || t('errors.generic'));
+    },
   });
 
   const updatePaymentMutation = useMutation({
-    mutationFn: ({ id: paymentId, data }: { id: string; data: Partial<Payment> }) =>
-      paymentsApi.update(paymentId, data),
+    mutationFn: ({ id: paymentId, data }: { id: string; data: Partial<Payment> }) => {
+      // Clean up data - remove empty strings
+      const cleanData: any = {};
+      Object.entries(data).forEach(([key, value]) => {
+        if (value !== '' && value !== null && value !== undefined) {
+          cleanData[key] = value;
+        }
+      });
+      return paymentsApi.update(paymentId, cleanData);
+    },
     onSuccess: () => {
       toast.success(t('success.updated'));
       queryClient.invalidateQueries({ queryKey: ['payments', job?.id] });
+      queryClient.invalidateQueries({ queryKey: ['jobs', job?.id] });
+      queryClient.invalidateQueries({ queryKey: ['jobs'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+      queryClient.invalidateQueries({ queryKey: ['allPayments'] });
       setIsEditPaymentModalOpen(false);
       setSelectedPayment(null);
     },
-    onError: () => toast.error(t('errors.generic')),
+    onError: (error: any) => {
+      console.error('Payment update error:', error);
+      toast.error(error?.response?.data?.detail || t('errors.generic'));
+    },
   });
 
   const markPaidMutation = useMutation({
@@ -246,7 +348,10 @@ export default function ProjectDetails() {
     onSuccess: () => {
       toast.success(t('success.updated'));
       queryClient.invalidateQueries({ queryKey: ['payments', job?.id] });
+      queryClient.invalidateQueries({ queryKey: ['jobs', job?.id] });
+      queryClient.invalidateQueries({ queryKey: ['jobs'] });
       queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+      queryClient.invalidateQueries({ queryKey: ['allPayments'] });
       setIsConfirmMarkPaidModalOpen(false);
       setSelectedPayment(null);
     },
@@ -294,7 +399,7 @@ export default function ProjectDetails() {
   };
 
   const getProductName = (productId: string) => {
-    const product = products.find(p => p.id === productId);
+    const product = products.find((p: any) => p.id === productId);
     return product?.name || '-';
   };
 
@@ -311,6 +416,27 @@ export default function ProjectDetails() {
       expired: 'danger',
     };
     return variants[status] || 'info';
+  };
+
+  const getGoogleMapsLink = (address: string) => {
+    const encodedAddress = encodeURIComponent(address);
+    return `https://www.google.com/maps/search/?api=1&query=${encodedAddress}`;
+  };
+
+  const handleDateUpdate = (field: string, value: string) => {
+    if (!job) return;
+    updateJobMutation.mutate({ [field]: value || null });
+  };
+
+  const handleNotesUpdate = () => {
+    if (!job) return;
+    updateJobMutation.mutate({ notes: editedNotes });
+    setIsEditingNotes(false);
+  };
+
+  const handleStartEditingNotes = () => {
+    setEditedNotes(job?.notes || '');
+    setIsEditingNotes(true);
   };
 
   const jobStatuses: JobStatus[] = ['pending', 'measuring', 'in_production', 'ready_for_installation', 'installed', 'completed', 'cancelled'];
@@ -358,7 +484,7 @@ export default function ProjectDetails() {
               </div>
               {hasJob && job && (
                 <div className="flex items-center gap-3">
-                  <div className="text-xs text-gray-500">{t('projects.projectNumber')}:</div>
+                  <div className="text-xs text-gray-500">{t('projects.jobID')}:</div>
                   <div className="font-semibold text-gray-900">#{job.id.substring(0, 8)}</div>
                 </div>
               )}
@@ -467,7 +593,190 @@ export default function ProjectDetails() {
         </div>
       </div>
 
-      {/* ========== 2. WORKFLOW PROGRESS (Only if job exists) ========== */}
+      {/* ========== 2. PROJECT INFORMATION ========== */}
+      {hasJob && job && (
+        <CollapsibleSection
+          title={t('projects.projectInformation')}
+          defaultOpen={sectionsOpen.info}
+        >
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div>
+              <div className="text-sm font-medium text-gray-500 mb-1">Job ID</div>
+              <div className="text-gray-900">#{job.id.substring(0, 8).toUpperCase()}</div>
+            </div>
+            
+            <div>
+              <div className="text-sm font-medium text-gray-500 mb-1">{t('projects.customerName')}</div>
+              <div className="text-gray-900">{customer?.full_name || '-'}</div>
+            </div>
+            
+            <div>
+              <div className="text-sm font-medium text-gray-500 mb-1">{t('projects.customerPhone')}</div>
+              <div className="text-gray-900">{customer?.phone_number || '-'}</div>
+            </div>
+            
+            <div>
+              <div className="text-sm font-medium text-gray-500 mb-1">{t('customers.governorate')}</div>
+              <div className="text-gray-900">{customer?.governorate || '-'}</div>
+            </div>
+            
+            <div>
+              <div className="text-sm font-medium text-gray-500 mb-1">{t('customers.address')}</div>
+              <div className="text-gray-900">{customer?.address || '-'}</div>
+            </div>
+            
+            {customer?.address && (
+              <div>
+                <div className="text-sm font-medium text-gray-500 mb-1">Google Maps</div>
+                <a
+                  href={getGoogleMapsLink(customer.address)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-600 hover:text-blue-700 flex items-center gap-1"
+                >
+                  <ExternalLink className="w-4 h-4" />
+                  {t('projects.viewOnMaps')}
+                </a>
+              </div>
+            )}
+            
+            <div>
+              <div className="text-sm font-medium text-gray-500 mb-1">{t('projects.currentStatus')}</div>
+              <JobStatusBadge status={job.status} />
+            </div>
+            
+            <div>
+              <div className="text-sm font-medium text-gray-500 mb-1">{t('projects.quotationStatus')}</div>
+              <Badge variant={getQuotationStatusBadgeVariant(activeQuotation.status)}>
+                {t(`quotationStatus.${activeQuotation.status}`)}
+              </Badge>
+            </div>
+            
+            <div>
+              <div className="text-sm font-medium text-gray-500 mb-1">{t('projects.totalPrice')}</div>
+              <div className="text-lg font-semibold text-gray-900">{formatCurrency(activeQuotation.final_price)}</div>
+            </div>
+            
+            <div>
+              <div className="text-sm font-medium text-gray-500 mb-1">{t('projects.paid')}</div>
+              <div className="text-lg font-semibold text-green-600">{formatCurrency(totalPaid)}</div>
+            </div>
+            
+            <div>
+              <div className="text-sm font-medium text-gray-500 mb-1">{t('projects.remaining')}</div>
+              <div className="text-lg font-semibold text-red-600">{formatCurrency(remainingBalance)}</div>
+            </div>
+            
+            <div>
+              <div className="text-sm font-medium text-gray-500 mb-1">{t('projects.depositPercentage')}</div>
+              <div className="text-gray-900">{paidPercentage.toFixed(1)}%</div>
+            </div>
+            
+            <div>
+              <div className="text-sm font-medium text-gray-500 mb-1">{t('projects.createdDate')}</div>
+              <div className="text-gray-900">{formatDate(job.created_at)}</div>
+            </div>
+            
+            <div>
+              <div className="text-sm font-medium text-gray-500 mb-1">{t('projects.lastUpdated')}</div>
+              <div className="text-gray-900">{formatDate(job.updated_at)}</div>
+            </div>
+          </div>
+        </CollapsibleSection>
+      )}
+
+      {/* ========== 3. PROJECT DATES (Editable) ========== */}
+      {hasJob && job && (
+        <CollapsibleSection
+          title={t('projects.projectDates')}
+          defaultOpen={sectionsOpen.dates}
+          badge={<Calendar className="w-5 h-5 text-gray-400" />}
+        >
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div>
+              <label className="text-sm font-medium text-gray-700 mb-2 block">
+                {t('projects.quotationSentDate')}
+              </label>
+              <Input
+                type="date"
+                value={activeQuotation.quotation_date || ''}
+                disabled
+                className="bg-gray-50"
+              />
+            </div>
+
+            <div>
+              <label className="text-sm font-medium text-gray-700 mb-2 block">
+                {t('projects.measurementDate')}
+              </label>
+              <Input
+                type="date"
+                value={job.measurement_date || ''}
+                onChange={(e) => handleDateUpdate('measurement_date', e.target.value)}
+              />
+            </div>
+
+            <div>
+              <label className="text-sm font-medium text-gray-700 mb-2 block">
+                {t('projects.manufacturingStart')}
+              </label>
+              <Input
+                type="date"
+                value={job.production_start || ''}
+                onChange={(e) => handleDateUpdate('production_start', e.target.value)}
+              />
+            </div>
+
+            <div>
+              <label className="text-sm font-medium text-gray-700 mb-2 block">
+                {t('projects.manufacturingFinish')}
+              </label>
+              <Input
+                type="date"
+                value={job.production_end || ''}
+                onChange={(e) => handleDateUpdate('production_end', e.target.value)}
+              />
+            </div>
+
+            <div>
+              <label className="text-sm font-medium text-gray-700 mb-2 block">
+                {t('projects.installationDate')}
+              </label>
+              <Input
+                type="date"
+                value={job.installation_date || ''}
+                onChange={(e) => handleDateUpdate('installation_date', e.target.value)}
+              />
+            </div>
+
+            <div>
+              <label className="text-sm font-medium text-gray-700 mb-2 block">
+                {t('projects.deliveryDate')}
+              </label>
+              <Input
+                type="date"
+                value={job.delivery_date || ''}
+                onChange={(e) => handleDateUpdate('delivery_date', e.target.value)}
+              />
+            </div>
+
+            <div>
+              <label className="text-sm font-medium text-gray-700 mb-2 block">
+                {t('projects.completionDate')}
+              </label>
+              <Input
+                type="date"
+                value={job.completion_date || ''}
+                disabled
+                className="bg-gray-50"
+              />
+              <p className="text-xs text-gray-500 mt-1">Auto-set when status changes to completed</p>
+            </div>
+          </div>
+        </CollapsibleSection>
+      )}
+
+      {/* ========== 4. WORKFLOW PROGRESS (Only if job exists) ========== */}
       {hasJob && job && (
         <CollapsibleSection
           title={t('projects.workflowProgress')}
@@ -543,7 +852,7 @@ export default function ProjectDetails() {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {items.map((item) => (
+                  {items.map((item: any) => (
                     <tr key={item.id}>
                       <td className="px-4 py-3 text-sm text-gray-900">{getProductName(item.product_id)}</td>
                       <td className="px-4 py-3 text-sm text-gray-900">{item.quantity}</td>
@@ -605,7 +914,7 @@ export default function ProjectDetails() {
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              {measurements.map((measurement) => (
+              {measurements.map((measurement: any) => (
                 <div
                   key={measurement.id}
                   onClick={() => navigate(`/jobs/${job.id}/measurements/${measurement.id}`)}
@@ -643,7 +952,7 @@ export default function ProjectDetails() {
           defaultOpen={sectionsOpen.payments}
           badge={
             <div className="flex items-center gap-2">
-              <Badge variant="success">{payments.filter(p => p.status === 'paid').length}</Badge>
+              <Badge variant="success">{payments.filter((p: Payment) => p.status === 'paid').length}</Badge>
               <span className="text-xs text-gray-500">/</span>
               <Badge variant="info">{payments.length}</Badge>
             </div>
@@ -690,7 +999,7 @@ export default function ProjectDetails() {
             </div>
           ) : (
             <div className="space-y-3">
-              {payments.map((payment) => {
+              {payments.map((payment: any) => {
                 const isOverdue = payment.status === 'pending' && payment.due_date && new Date(payment.due_date) < new Date();
                 
                 return (
@@ -823,28 +1132,61 @@ export default function ProjectDetails() {
         </CollapsibleSection>
       )}
 
-      {/* ========== 7. RECENT ACTIVITY ========== */}
-      <CollapsibleSection
-        title={t('projects.recentActivity')}
-        defaultOpen={sectionsOpen.activity}
-        badge={<AlertCircle className="w-5 h-5 text-gray-400" />}
-      >
-        <div className="text-center py-8 text-gray-500">
-          <p>{t('projects.activityPlaceholder')}</p>
-        </div>
-      </CollapsibleSection>
+      {/* ========== 7. ACTIVITY TIMELINE ========== */}
+      {hasJob && job && (
+        <CollapsibleSection
+          title={t('projects.activityTimeline')}
+          defaultOpen={sectionsOpen.activity}
+          badge={<AlertCircle className="w-5 h-5 text-gray-400" />}
+        >
+          <ProjectActivityTimeline job={job} />
+        </CollapsibleSection>
+      )}
 
-      {/* ========== 8. NOTES ========== */}
-      <CollapsibleSection
-        title={t('projects.notes')}
-        defaultOpen={sectionsOpen.notes}
-      >
-        {(hasJob ? job?.notes : activeQuotation.notes) ? (
-          <p className="text-gray-700 whitespace-pre-wrap">{hasJob ? job.notes : activeQuotation.notes}</p>
-        ) : (
-          <p className="text-gray-500 italic">{t('projects.noNotes')}</p>
-        )}
-      </CollapsibleSection>
+      {/* ========== 8. NOTES (Editable) ========== */}
+      {hasJob && job && (
+        <CollapsibleSection
+          title={t('projects.notes')}
+          defaultOpen={sectionsOpen.notes}
+          headerActions={
+            !isEditingNotes ? (
+              <Button size="sm" variant="outline" onClick={handleStartEditingNotes} className="flex items-center gap-2">
+                <Edit className="w-4 h-4" />
+                {t('common.edit')}
+              </Button>
+            ) : undefined
+          }
+        >
+          {isEditingNotes ? (
+            <div className="space-y-3">
+              <textarea
+                value={editedNotes}
+                onChange={(e) => setEditedNotes(e.target.value)}
+                rows={6}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                placeholder={t('projects.addNotes')}
+              />
+              <div className="flex gap-2">
+                <Button size="sm" onClick={handleNotesUpdate} className="flex items-center gap-2">
+                  <Save className="w-4 h-4" />
+                  {t('common.save')}
+                </Button>
+                <Button size="sm" variant="outline" onClick={() => setIsEditingNotes(false)}>
+                  {t('common.cancel')}
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <>
+              {job.notes ? (
+                <p className="text-gray-700 whitespace-pre-wrap">{job.notes}</p>
+              ) : (
+                <p className="text-gray-500 italic">{t('projects.noNotes')}</p>
+              )}
+            </>
+          )}
+        </CollapsibleSection>
+      )}
 
       {/* ========== 9. DOCUMENTS (Placeholder) ========== */}
       <CollapsibleSection
@@ -878,8 +1220,8 @@ export default function ProjectDetails() {
             <label className="block text-sm font-medium text-gray-700 mb-1">
               {t('projects.status')}
             </label>
-            <Select value={newStatus} onChange={(e) => setNewStatus(e.target.value as JobStatus | QuotationStatus)}>
-              {(hasJob ? jobStatuses : quotationStatuses).map(status => (
+            <Select value={newStatus} onChange={(value) => setNewStatus(value as JobStatus | QuotationStatus)}>
+              {(hasJob ? jobStatuses : quotationStatuses).map((status: any) => (
                 <option key={status} value={status}>
                   {t(`${hasJob ? 'jobStatus' : 'quotationStatus'}.${status}`)}
                 </option>
@@ -911,11 +1253,11 @@ export default function ProjectDetails() {
             </label>
             <Select
               value={itemFormData.product_id}
-              onChange={(e) => setItemFormData({ ...itemFormData, product_id: e.target.value })}
+              onChange={(value) => setItemFormData({ ...itemFormData, product_id: value })}
               required
             >
               <option value="">{t('quotations.selectProduct')}</option>
-              {products.map(product => (
+              {products.map((product: any) => (
                 <option key={product.id} value={product.id}>{product.name}</option>
               ))}
             </Select>
@@ -983,11 +1325,11 @@ export default function ProjectDetails() {
             </label>
             <Select
               value={itemFormData.product_id}
-              onChange={(e) => setItemFormData({ ...itemFormData, product_id: e.target.value })}
+              onChange={(value) => setItemFormData({ ...itemFormData, product_id: value })}
               required
             >
               <option value="">{t('quotations.selectProduct')}</option>
-              {products.map(product => (
+              {products.map((product: any) => (
                 <option key={product.id} value={product.id}>{product.name}</option>
               ))}
             </Select>
@@ -1040,7 +1382,10 @@ export default function ProjectDetails() {
       {/* Add Measurement Modal */}
       <Modal
         isOpen={isAddMeasurementModalOpen}
-        onClose={() => setIsAddMeasurementModalOpen(false)}
+        onClose={() => {
+          setIsAddMeasurementModalOpen(false);
+          setMeasurementItems([]);
+        }}
         title={t('projects.addMeasurement')}
       >
         <form onSubmit={(e) => {
@@ -1065,6 +1410,7 @@ export default function ProjectDetails() {
               type="text"
               value={measurementData.measured_by}
               onChange={(e) => setMeasurementData({ ...measurementData, measured_by: e.target.value })}
+              placeholder="اسم المهندس"
             />
           </div>
           <div>
@@ -1074,15 +1420,134 @@ export default function ProjectDetails() {
             <textarea
               value={measurementData.notes}
               onChange={(e) => setMeasurementData({ ...measurementData, notes: e.target.value })}
-              rows={3}
+              rows={2}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+              placeholder="ملاحظات عامة"
             />
           </div>
+
+          {/* Measurement Items Section */}
+          <div className="border-t pt-4">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-sm font-semibold text-gray-900">قطع القياس</h3>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={() => {
+                  setMeasurementItems([...measurementItems, {
+                    id: Date.now().toString(),
+                    piece_name: '',
+                    piece_number: '',
+                    width: '',
+                    height: '',
+                    quantity: '1',
+                    notes: '',
+                  }]);
+                }}
+              >
+                <Plus className="w-4 h-4 ml-1" />
+                إضافة قطعة
+              </Button>
+            </div>
+
+            {measurementItems.length === 0 ? (
+              <div className="text-center py-4 text-sm text-gray-500">
+                لم يتم إضافة قطع بعد
+              </div>
+            ) : (
+              <div className="space-y-3 max-h-96 overflow-y-auto">
+                {measurementItems.map((item, index) => (
+                  <div key={item.id} className="border rounded-lg p-3 bg-gray-50">
+                    <div className="flex items-start justify-between mb-2">
+                      <span className="text-sm font-medium text-gray-700">قطعة #{index + 1}</span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setMeasurementItems(measurementItems.filter(i => i.id !== item.id));
+                        }}
+                        className="text-red-600 hover:text-red-700"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <Input
+                        placeholder="اسم القطعة"
+                        value={item.piece_name}
+                        onChange={(e) => {
+                          const updated = [...measurementItems];
+                          updated[index].piece_name = e.target.value;
+                          setMeasurementItems(updated);
+                        }}
+                      />
+                      <Input
+                        placeholder="رقم القطعة"
+                        value={item.piece_number}
+                        onChange={(e) => {
+                          const updated = [...measurementItems];
+                          updated[index].piece_number = e.target.value;
+                          setMeasurementItems(updated);
+                        }}
+                      />
+                      <Input
+                        type="number"
+                        step="0.01"
+                        placeholder="العرض (سم)"
+                        value={item.width}
+                        onChange={(e) => {
+                          const updated = [...measurementItems];
+                          updated[index].width = e.target.value;
+                          setMeasurementItems(updated);
+                        }}
+                      />
+                      <Input
+                        type="number"
+                        step="0.01"
+                        placeholder="الارتفاع (سم)"
+                        value={item.height}
+                        onChange={(e) => {
+                          const updated = [...measurementItems];
+                          updated[index].height = e.target.value;
+                          setMeasurementItems(updated);
+                        }}
+                      />
+                      <Input
+                        type="number"
+                        placeholder="الكمية"
+                        value={item.quantity}
+                        onChange={(e) => {
+                          const updated = [...measurementItems];
+                          updated[index].quantity = e.target.value;
+                          setMeasurementItems(updated);
+                        }}
+                      />
+                      <Input
+                        placeholder="ملاحظات"
+                        value={item.notes}
+                        onChange={(e) => {
+                          const updated = [...measurementItems];
+                          updated[index].notes = e.target.value;
+                          setMeasurementItems(updated);
+                        }}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
           <div className="flex justify-end gap-2 pt-4">
-            <Button type="button" variant="outline" onClick={() => setIsAddMeasurementModalOpen(false)}>
+            <Button type="button" variant="outline" onClick={() => {
+              setIsAddMeasurementModalOpen(false);
+              setMeasurementItems([]);
+            }}>
               {t('common.cancel')}
             </Button>
-            <Button type="submit">{t('common.create')}</Button>
+            <Button type="submit" disabled={createMeasurementMutation.isPending}>
+              {createMeasurementMutation.isPending ? 'جاري الحفظ...' : t('common.create')}
+            </Button>
           </div>
         </form>
       </Modal>
@@ -1095,6 +1560,15 @@ export default function ProjectDetails() {
       >
         <form onSubmit={(e) => {
           e.preventDefault();
+          // Validate required fields
+          if (!paymentData.percentage || parseFloat(paymentData.percentage) <= 0) {
+            toast.error('Percentage must be greater than 0');
+            return;
+          }
+          if (!paymentData.amount || parseFloat(paymentData.amount) < 0) {
+            toast.error('Amount must be 0 or greater');
+            return;
+          }
           createPaymentMutation.mutate(paymentData);
         }} className="space-y-4">
           <div>
@@ -1103,7 +1577,7 @@ export default function ProjectDetails() {
             </label>
             <Select
               value={paymentData.payment_type}
-              onChange={(e) => setPaymentData({ ...paymentData, payment_type: e.target.value as PaymentType })}
+              onChange={(value) => setPaymentData({ ...paymentData, payment_type: value as PaymentType })}
               required
             >
               <option value="deposit">{t('paymentType.deposit')}</option>
@@ -1117,7 +1591,7 @@ export default function ProjectDetails() {
             </label>
             <Select
               value={paymentData.payment_method}
-              onChange={(e) => setPaymentData({ ...paymentData, payment_method: e.target.value as PaymentMethod })}
+              onChange={(value) => setPaymentData({ ...paymentData, payment_method: value as PaymentMethod })}
               required
             >
               <option value="cash">{t('paymentMethod.cash')}</option>
@@ -1204,7 +1678,7 @@ export default function ProjectDetails() {
             </label>
             <Select
               value={paymentData.payment_type}
-              onChange={(e) => setPaymentData({ ...paymentData, payment_type: e.target.value as PaymentType })}
+              onChange={(value) => setPaymentData({ ...paymentData, payment_type: value as PaymentType })}
               required
             >
               <option value="deposit">{t('paymentType.deposit')}</option>
@@ -1218,7 +1692,7 @@ export default function ProjectDetails() {
             </label>
             <Select
               value={paymentData.payment_method}
-              onChange={(e) => setPaymentData({ ...paymentData, payment_method: e.target.value as PaymentMethod })}
+              onChange={(value) => setPaymentData({ ...paymentData, payment_method: value as PaymentMethod })}
               required
             >
               <option value="cash">{t('paymentMethod.cash')}</option>
@@ -1308,3 +1782,4 @@ export default function ProjectDetails() {
     </div>
   );
 }
+

@@ -37,7 +37,7 @@ export function Table({ children, className = '' }: TableProps) {
 export function TableHead({ children }: TableHeadProps) {
   return (
     <thead className="bg-gray-50">
-      <tr>{children}</tr>
+      {children}
     </thead>
   );
 }

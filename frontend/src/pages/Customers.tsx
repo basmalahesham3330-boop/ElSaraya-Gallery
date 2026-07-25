@@ -204,11 +204,13 @@ export default function Customers() {
         <div className="bg-white rounded-lg shadow">
           <Table>
             <TableHead>
-              <TableHeaderCell>{t('customers.fullName')}</TableHeaderCell>
-              <TableHeaderCell>{t('customers.phoneNumber')}</TableHeaderCell>
-              <TableHeaderCell>{t('customers.city')}</TableHeaderCell>
-              <TableHeaderCell>{t('customers.createdAt')}</TableHeaderCell>
-              <TableHeaderCell>{t('common.actions')}</TableHeaderCell>
+              <TableRow>
+                <TableHeaderCell>{t('customers.fullName')}</TableHeaderCell>
+                <TableHeaderCell>{t('customers.phoneNumber')}</TableHeaderCell>
+                <TableHeaderCell>{t('customers.city')}</TableHeaderCell>
+                <TableHeaderCell>{t('customers.createdAt')}</TableHeaderCell>
+                <TableHeaderCell>{t('common.actions')}</TableHeaderCell>
+              </TableRow>
             </TableHead>
             <TableBody>
               {customers.map((customer) => (

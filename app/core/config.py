@@ -20,8 +20,8 @@ class Settings(BaseSettings):
 
     # Application
     APP_NAME: str = "ERP Backend"
-    APP_ENV: str = "development"
-    APP_DEBUG: bool = True
+    APP_ENV: str = "production"
+    APP_DEBUG: bool = False
     API_V1_PREFIX: str = "/api/v1"
 
     # Database
@@ -41,6 +41,14 @@ class Settings(BaseSettings):
     # Server
     HOST: str = "0.0.0.0"
     PORT: int = 8000
+
+    # CORS - Frontend origins
+    CORS_ORIGINS: str = "http://localhost:3000"
+
+    @property
+    def cors_origins_list(self) -> list[str]:
+        """Parse CORS_ORIGINS as comma-separated list."""
+        return [origin.strip() for origin in self.CORS_ORIGINS.split(",") if origin.strip()]
 
 
 @lru_cache

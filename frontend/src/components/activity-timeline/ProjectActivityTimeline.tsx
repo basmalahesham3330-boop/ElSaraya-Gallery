@@ -23,16 +23,22 @@ export default function ProjectActivityTimeline({ job, onNavigateToSection }: Pr
   const [searchQuery, setSearchQuery] = useState('');
   const [showOlderEvents, setShowOlderEvents] = useState(false);
 
-  // Fetch activity logs (cast to EnhancedActivityLog for type safety)
+  // Fetch activity logs with limit - only recent 20 events initially
+  const [limit, setLimit] = useState(20);
   const { data: events = [], isLoading, error } = useQuery<EnhancedActivityLog[]>({
-    queryKey: ['activity-logs', job.id],
+    queryKey: ['activity-logs', job.id, limit],
     queryFn: async () => {
-      const logs = await activityLogsApi.getByJobId(job.id);
+      const logs = await activityLogsApi.getByJobId(job.id, limit);
       // Cast to EnhancedActivityLog - backend may not have all fields yet
       return logs as EnhancedActivityLog[];
     },
-    staleTime: 2 * 60 * 1000, // 2 minutes
+    staleTime: 30 * 60 * 1000, // 30 minutes - activity logs are historical
+    cacheTime: 60 * 60 * 1000, // 1 hour cache
   });
+
+  const handleLoadMore = useCallback(() => {
+    setLimit(prev => prev + 20);
+  }, []);
 
   // Filter and search events
   const filteredEvents = useMemo(() => {
@@ -245,6 +251,19 @@ export default function ProjectActivityTimeline({ job, onNavigateToSection }: Pr
           )}
         </div>
       )}
+
+      {/* Load More Button at bottom */}
+      {filteredEvents.length >= limit && (
+        <div className="flex justify-center pt-4">
+          <button
+            onClick={handleLoadMore}
+            className="px-6 py-3 text-sm font-medium text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors"
+          >
+            تحميل المزيد من الأحداث
+          </button>
+        </div>
+      )}
     </div>
   );
 }
+

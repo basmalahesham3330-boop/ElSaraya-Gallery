@@ -99,7 +99,7 @@ export default function QuotationsWaitingPanel() {
             </label>
             <Select
               value={selectedQuotationId}
-              onChange={(e) => setSelectedQuotationId(e.target.value)}
+              onChange={(value) => setSelectedQuotationId(value)}
               required
             >
               <option value="">{t('projects.selectQuotation')}</option>

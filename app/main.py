@@ -11,6 +11,7 @@ from contextlib import asynccontextmanager
 from collections.abc import AsyncGenerator
 
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.exception_handlers import register_exception_handlers
 from app.api.v1.router import router as api_v1_router
@@ -37,6 +38,15 @@ app = FastAPI(
         "ERP backend API for quotations, jobs, measurements, and payments. "
         "The Customer module is the reference implementation for future resources."
     ),
+)
+
+# Configure CORS for frontend access
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=settings.cors_origins_list,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 register_exception_handlers(app)

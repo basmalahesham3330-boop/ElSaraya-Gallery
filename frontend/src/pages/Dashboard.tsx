@@ -1,8 +1,7 @@
-import { useEffect, useState } from 'react';
 import { RefreshCw } from 'lucide-react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from '../i18n/useTranslation';
 import { dashboardApi } from '../services/dashboard';
-import type { DashboardData } from '../types/dashboard';
 import LoadingSpinner from '../components/LoadingSpinner';
 import KPIGrid from '../components/dashboard/KPIGrid';
 import PipelineBoard from '../components/dashboard/PipelineBoard';
@@ -12,43 +11,17 @@ import QuotationsWaitingPanel from '../components/dashboard/QuotationsWaitingPan
 
 export default function Dashboard() {
   const { t } = useTranslation();
-  const [data, setData] = useState<DashboardData | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [isRefreshing, setIsRefreshing] = useState(false);
+  const queryClient = useQueryClient();
 
-  const fetchDashboard = async (isManualRefresh = false) => {
-    try {
-      if (isManualRefresh) {
-        setIsRefreshing(true);
-      } else {
-        setIsLoading(true);
-      }
-      setError(null);
-
-      const dashboardData = await dashboardApi.getDashboard();
-      setData(dashboardData);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : t('dashboard.errorLoadingData'));
-    } finally {
-      setIsLoading(false);
-      setIsRefreshing(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchDashboard();
-
-    // Auto-refresh every 30 seconds
-    const interval = setInterval(() => {
-      fetchDashboard();
-    }, 30000);
-
-    return () => clearInterval(interval);
-  }, []);
+  const { data, isLoading, error, refetch, isRefetching } = useQuery({
+    queryKey: ['dashboard'],
+    queryFn: () => dashboardApi.getDashboard(),
+    refetchInterval: 5 * 60 * 1000, // Auto-refresh every 5 minutes
+    staleTime: 2 * 60 * 1000, // Consider data stale after 2 minutes
+  });
 
   const handleRefresh = () => {
-    fetchDashboard(true);
+    refetch();
   };
 
   if (isLoading) {
@@ -62,9 +35,9 @@ export default function Dashboard() {
   if (error) {
     return (
       <div className="text-center py-12">
-        <p className="text-red-600 mb-4">{error}</p>
+        <p className="text-red-600 mb-4">{error instanceof Error ? error.message : t('dashboard.errorLoadingData')}</p>
         <button
-          onClick={() => fetchDashboard()}
+          onClick={handleRefresh}
           className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
         >
           {t('dashboard.retry')}
@@ -87,11 +60,11 @@ export default function Dashboard() {
         </div>
         <button
           onClick={handleRefresh}
-          disabled={isRefreshing}
+          disabled={isRefetching}
           className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50"
         >
-          <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
-          {isRefreshing ? t('dashboard.refreshing') : t('common.refresh')}
+          <RefreshCw className={`w-4 h-4 ${isRefetching ? 'animate-spin' : ''}`} />
+          {isRefetching ? t('dashboard.refreshing') : t('common.refresh')}
         </button>
       </div>
 

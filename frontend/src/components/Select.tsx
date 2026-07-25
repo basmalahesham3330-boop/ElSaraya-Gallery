@@ -16,9 +16,6 @@ const Select = forwardRef<HTMLSelectElement, SelectProps>(
       if (onChange) {
         onChange(e.target.value);
       }
-      if (props.onChange) {
-        props.onChange(e);
-      }
     };
 
     return (

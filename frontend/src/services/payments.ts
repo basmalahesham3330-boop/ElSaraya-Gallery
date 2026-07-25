@@ -20,13 +20,13 @@ export const paymentsApi = {
   create: async (jobId: string, payment: {
     payment_type: string;
     payment_method: string;
-    percentage: string;
-    amount: string;
+    percentage: number;
+    amount: number;
     due_date?: string;
     paid_date?: string;
     notes?: string;
   }) => {
-    const { data } = await api.post<Payment>(`/jobs/${jobId}/payments`, { ...payment, job_id: jobId });
+    const { data } = await api.post<Payment>(`/jobs/${jobId}/payments`, payment);
     return data;
   },
 

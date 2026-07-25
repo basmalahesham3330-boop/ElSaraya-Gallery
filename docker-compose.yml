@@ -10,19 +10,24 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: ${POSTGRES_DB}
     ports:
-      - "5432:5432"
+      - "${POSTGRES_PORT:-5432}:5432"
     volumes:
       - erp_postgres_data:/var/lib/postgresql/data
+    networks:
+      - erp_network
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 10s
       timeout: 5s
       retries: 5
+      start_period: 10s
 
   backend:
     build:
       context: .
       dockerfile: Dockerfile
+      args:
+        - BUILD_ENV=${APP_ENV:-production}
     container_name: erp_backend
     restart: unless-stopped
     env_file:
@@ -30,16 +35,26 @@ services:
     environment:
       DATABASE_URL: ${DATABASE_URL}
       DATABASE_URL_SYNC: ${DATABASE_URL_SYNC}
+      APP_ENV: ${APP_ENV:-production}
+      APP_DEBUG: ${APP_DEBUG:-false}
     ports:
-      - "8000:8000"
+      - "${PORT:-8000}:8000"
     depends_on:
       db:
         condition: service_healthy
-    volumes:
-      - ./app:/code/app
-      - ./alembic:/code/alembic
-    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    networks:
+      - erp_network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
 
 volumes:
   erp_postgres_data:
     driver: local
+
+networks:
+  erp_network:
+    driver: bridge

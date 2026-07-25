@@ -278,12 +278,14 @@ export default function Products() {
         <div className="bg-white rounded-lg shadow">
           <Table>
             <TableHead>
-              <TableHeaderCell>{t('products.productName')}</TableHeaderCell>
-              <TableHeaderCell>{t('products.category')}</TableHeaderCell>
-              <TableHeaderCell>{t('products.description')}</TableHeaderCell>
-              <TableHeaderCell>{t('products.status')}</TableHeaderCell>
-              <TableHeaderCell>{t('common.createdAt')}</TableHeaderCell>
-              <TableHeaderCell>{t('common.actions')}</TableHeaderCell>
+              <TableRow>
+                <TableHeaderCell>{t('products.productName')}</TableHeaderCell>
+                <TableHeaderCell>{t('products.category')}</TableHeaderCell>
+                <TableHeaderCell>{t('products.description')}</TableHeaderCell>
+                <TableHeaderCell>{t('products.status')}</TableHeaderCell>
+                <TableHeaderCell>{t('common.createdAt')}</TableHeaderCell>
+                <TableHeaderCell>{t('common.actions')}</TableHeaderCell>
+              </TableRow>
             </TableHead>
             <TableBody>
               {products.map((product) => (

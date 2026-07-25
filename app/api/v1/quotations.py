@@ -112,6 +112,50 @@ async def list_quotations(
 
 
 @router.get(
+    "/quotations/available-for-job",
+    summary="List quotations available for job creation",
+    description=(
+        "Returns quotations in 'approved' status that don't have a job yet. "
+        "Used by the dashboard to show quotations ready to convert to jobs."
+    ),
+)
+async def list_available_quotations_for_job(
+    service: Annotated[QuotationService, Depends(get_quotation_service)],
+):
+    """List quotations that are approved but don't have a job yet."""
+    from sqlalchemy import select
+    from app.models.quotation import Quotation
+    from app.models.job import Job
+    from sqlalchemy.orm import joinedload, outerjoin
+    
+    # Get approved quotations without jobs
+    # Use LEFT JOIN to find quotations where job_id is NULL
+    stmt = (
+        select(Quotation)
+        .outerjoin(Job, Quotation.id == Job.quotation_id)
+        .options(joinedload(Quotation.customer))
+        .where(Quotation.status == QuotationStatus.APPROVED)
+        .where(Job.id == None)  # No associated job
+        .order_by(Quotation.quotation_date.desc())
+    )
+    
+    result = await service._session.execute(stmt)
+    quotations = result.unique().scalars().all()
+    
+    # Format response to match frontend expectations
+    return [
+        {
+            "id": str(q.id),
+            "quotation_number": q.quotation_number,
+            "quotation_date": q.quotation_date.isoformat(),
+            "customer_name": q.customer.full_name,
+            "final_price": str(q.total_price),
+        }
+        for q in quotations
+    ]
+
+
+@router.get(
     "/quotations/{quotation_id}",
     response_model=QuotationDetailRead,
     summary="Get quotation by ID",
