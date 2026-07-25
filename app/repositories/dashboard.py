@@ -1,7 +1,7 @@
 """Dashboard repository."""
 from __future__ import annotations
 
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, timedelta, timezone
 from typing import Any
 
 from sqlalchemy import Select, and_, case, func, or_, select
@@ -16,6 +16,11 @@ from app.models.customer import Customer
 from app.models.job import Job
 from app.models.payment import Payment
 from app.models.quotation import Quotation
+
+
+def _utcnow() -> datetime:
+    """Return current UTC time (timezone-aware)."""
+    return datetime.now(tz=timezone.utc)
 
 
 class DashboardRepository:
@@ -174,7 +179,7 @@ class DashboardRepository:
 
     async def get_stale_quotations(self, days_threshold: int = 14) -> list[Quotation]:
         """Fetch quotations that have been sent but not responded to."""
-        threshold_date = datetime.now() - timedelta(days=days_threshold)
+        threshold_date = _utcnow() - timedelta(days=days_threshold)
         
         stmt = (
             select(Quotation)
