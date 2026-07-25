@@ -42,6 +42,7 @@ class PipelineDTO(BaseModel):
     manufacturing: list[JobPipelineCardDTO] = Field(default_factory=list)
     installation: list[JobPipelineCardDTO] = Field(default_factory=list)
     completed: list[JobPipelineCardDTO] = Field(default_factory=list)
+    postponed: list[JobPipelineCardDTO] = Field(default_factory=list)
     rejected: list[JobPipelineCardDTO] = Field(default_factory=list)
 
     class Config:
@@ -51,12 +52,27 @@ class PipelineDTO(BaseModel):
 class KPIsDTO(BaseModel):
     """Operational KPIs for dashboard."""
 
+    # Operational KPIs
     total_active_jobs: int = Field(..., description="Count of active jobs")
-    quotations_waiting_response: int = Field(..., description="Quotations awaiting customer response")
+    pending_quotations: int = Field(..., description="Pending quotations (awaiting approval)")
     measurements_scheduled_today: int = Field(..., description="Measurements scheduled for today")
     installations_scheduled_today: int = Field(..., description="Installations scheduled for today")
+    manufacturing_queue: int = Field(..., description="Projects in manufacturing queue")
+    completed_last_7_days: int = Field(..., description="Projects completed in last 7 days")
+    maintenance_jobs: int = Field(0, description="Active maintenance jobs (not implemented)")
+    late_manufacturing: int = Field(..., description="Late manufacturing (deposit paid, production start date passed)")
     overdue_payments: int = Field(..., description="Count of overdue payments")
-    jobs_delayed: int = Field(..., description="Count of delayed jobs")
+    delayed_projects: int = Field(..., description="Count of delayed projects")
+    
+    # Workflow Stage KPIs (match Pipeline Board exactly)
+    projects_in_measurement: int = Field(..., description="Projects in measurement stage")
+    projects_waiting_quotation: int = Field(..., description="Projects waiting for quotation approval")
+    projects_deposit_paid: int = Field(..., description="Projects with deposit paid")
+    projects_in_manufacturing: int = Field(..., description="Projects in manufacturing")
+    projects_in_installation: int = Field(..., description="Projects in installation")
+    projects_completed: int = Field(..., description="Recently completed projects (7 days)")
+    projects_postponed: int = Field(..., description="Postponed/cancelled projects")
+    projects_rejected: int = Field(..., description="Rejected quotations")
 
 
 

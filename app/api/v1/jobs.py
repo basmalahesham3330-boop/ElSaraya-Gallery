@@ -48,7 +48,7 @@ def get_job_service(
     summary="List jobs",
     description=(
         "Paginated job search. Filters: ``status``, ``customer`` (UUID), "
-        "``quotation`` (UUID), ``date_from``, ``date_to``. "
+        "``quotation`` (UUID), ``date_from``, ``date_to``, ``workflow_stage``. "
         "Sort by: id, status, measurement_date, production_start, production_end, "
         "installation_date, delivery_date, completion_date, created_at, updated_at."
     ),
@@ -67,6 +67,10 @@ async def list_jobs(
     quotation: Annotated[
         uuid.UUID | None,
         Query(description="Filter by quotation UUID"),
+    ] = None,
+    workflow_stage: Annotated[
+        str | None,
+        Query(description="Filter by workflow stage (quotation, measurement, deposit_received, manufacturing, installation, completed, postponed, rejected)"),
     ] = None,
     date_from: Annotated[date | None, Query(description="Inclusive start date")] = None,
     date_to: Annotated[date | None, Query(description="Inclusive end date")] = None,
@@ -88,6 +92,7 @@ async def list_jobs(
         pagination=pagination,
         sorting=sorting,
         filters=filters,
+        workflow_stage=workflow_stage,
     )
     return JobListResponse(
         items=[JobRead.model_validate(i) for i in items],

@@ -85,13 +85,60 @@ class JobService(BaseService[Job]):
         pagination: Pagination | None = None,
         sorting: Sorting | None = None,
         filters: JobFilters | None = None,
+        workflow_stage: str | None = None,
     ) -> tuple[list[Job], int]:
-        """List jobs with optional filtering, sorting, and pagination."""
-        return await self._jobs.search(
+        """
+        List jobs with optional filtering, sorting, and pagination.
+        
+        If workflow_stage is provided, filters jobs by that workflow stage.
+        """
+        # Get all jobs matching the base filters
+        items, total = await self._jobs.search(
             pagination=pagination,
             sorting=sorting,
             filters=filters,
         )
+        
+        # Apply workflow stage filter if specified
+        if workflow_stage:
+            from app.core.workflow import map_job_to_workflow_stage
+            # Need to fetch with relationships for workflow mapping
+            from sqlalchemy import select
+            from sqlalchemy.orm import joinedload, selectinload
+            
+            # Build query with relationships
+            stmt = select(Job).options(
+                joinedload(Job.quotation),
+                selectinload(Job.payments),
+            )
+            
+            # Apply base filters
+            if filters:
+                from app.repositories.job import JobRepository
+                repo = JobRepository(self._session)
+                stmt = repo._apply_filters(stmt, filters)
+            
+            # Execute and filter by workflow stage
+            result = await self._session.execute(stmt)
+            all_jobs = list(result.unique().scalars().all())
+            
+            # Filter by workflow stage
+            filtered_jobs = [
+                job for job in all_jobs
+                if map_job_to_workflow_stage(job) == workflow_stage
+            ]
+            
+            # Apply pagination manually
+            if pagination:
+                start = pagination.offset
+                end = start + pagination.limit
+                items = filtered_jobs[start:end]
+                total = len(filtered_jobs)
+            else:
+                items = filtered_jobs
+                total = len(filtered_jobs)
+        
+        return items, total
 
     async def list_customer_jobs(
         self,

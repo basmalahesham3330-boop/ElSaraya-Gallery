@@ -19,8 +19,8 @@ export default function KPIGrid({ kpis }: KPIGridProps) {
         color="blue"
       />
       <KPICard
-        label={t('dashboard.kpi.quotationsWaitingResponse')}
-        value={kpis.quotations_waiting_response}
+        label={t('dashboard.kpi.pendingQuotations')}
+        value={kpis.pending_quotations}
         icon={FileText}
         color="yellow"
       />
@@ -43,8 +43,8 @@ export default function KPIGrid({ kpis }: KPIGridProps) {
         color="red"
       />
       <KPICard
-        label={t('dashboard.kpi.jobsDelayed')}
-        value={kpis.jobs_delayed}
+        label={t('dashboard.kpi.delayedProjects')}
+        value={kpis.delayed_projects}
         icon={AlertTriangle}
         color="orange"
       />

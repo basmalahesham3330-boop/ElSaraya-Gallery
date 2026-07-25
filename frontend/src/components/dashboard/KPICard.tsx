@@ -19,6 +19,9 @@ const colorClasses = {
 
 export default function KPICard({ label, value, icon: Icon, color, onClick }: KPICardProps) {
   const bgColorClass = colorClasses[color];
+  
+  // Defensive: ensure value is always a number
+  const displayValue = typeof value === 'number' ? value : 0;
 
   return (
     <div
@@ -37,7 +40,7 @@ export default function KPICard({ label, value, icon: Icon, color, onClick }: KP
       <div className="flex items-center justify-between">
         <div>
           <p className="text-sm font-medium text-gray-600">{label}</p>
-          <p className="mt-2 text-3xl font-bold text-gray-900">{value.toLocaleString()}</p>
+          <p className="mt-2 text-3xl font-bold text-gray-900">{displayValue.toLocaleString()}</p>
         </div>
         <div className={`${bgColorClass} p-3 rounded-lg`}>
           <Icon className="w-6 h-6 text-white" />

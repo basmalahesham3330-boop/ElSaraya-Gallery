@@ -80,6 +80,7 @@ export const translations = {
     kpi: {
       totalActiveProjects: 'المشاريع النشطة',
       totalActiveJobs: 'المشاريع النشطة',
+      pendingQuotations: 'عروض بانتظار الرد',
       quotationsWaiting: 'عروض بانتظار الرد',
       quotationsWaitingResponse: 'عروض بانتظار الرد',
       measurementsToday: 'القياسات اليوم',
@@ -87,6 +88,7 @@ export const translations = {
       installationsToday: 'التركيبات اليوم',
       installationsScheduledToday: 'التركيبات اليوم',
       overduePayments: 'دفعات متأخرة',
+      delayedProjects: 'مشاريع متأخرة',
       projectsDelayed: 'مشاريع متأخرة',
       jobsDelayed: 'مشاريع متأخرة',
     },
@@ -99,6 +101,7 @@ export const translations = {
       manufacturing: 'التصنيع',
       installation: 'التركيب',
       completed: 'مكتمل',
+      postponed: 'مؤجل',
       rejected: 'مرفوض',
       pending: 'معلق',
       noJobs: 'لا توجد أعمال في هذه المرحلة',
@@ -168,6 +171,7 @@ export const translations = {
     fullName: 'الاسم الكامل',
     phoneNumber: 'رقم الهاتف',
     city: 'المدينة',
+    governorate: 'المحافظة',
     address: 'العنوان',
     notes: 'ملاحظات',
     createdAt: 'تاريخ الإنشاء',
@@ -240,6 +244,7 @@ export const translations = {
     item: 'عنصر',
     approve: 'الموافقة',
     reject: 'رفض',
+    selectProduct: 'اختر المنتج',
   },
 
   // Quotation Status
@@ -358,6 +363,40 @@ export const translations = {
     projectLabel: 'مشروع',
     filterByStatus: 'تصفية حسب الحالة',
     allItems: 'جميع العناصر',
+    // Section 2 additions
+    projectInformation: 'معلومات المشروع',
+    jobID: 'معرف المشروع',
+    customerName: 'اسم العميل',
+    customerPhone: 'رقم هاتف العميل',
+    currentStatus: 'الحالة الحالية',
+    quotationStatus: 'حالة عرض السعر',
+    totalPrice: 'السعر الإجمالي',
+    paid: 'المدفوع',
+    remaining: 'المتبقي',
+    depositPercentage: 'نسبة العربون',
+    lastUpdated: 'آخر تحديث',
+    viewOnMaps: 'عرض على الخرائط',
+    // Section 3 additions
+    projectDates: 'تواريخ المشروع',
+    quotationSentDate: 'تاريخ إرسال عرض السعر',
+    manufacturingStart: 'بداية التصنيع',
+    manufacturingFinish: 'نهاية التصنيع',
+    // Section 8 additions
+    addNotes: 'إضافة ملاحظات...',
+    activityTimeline: 'الجدول الزمني للنشاط',
+    selectProduct: 'اختر المنتج',
+  },
+
+  // Project Card (standalone for components usage)
+  projectCard: {
+    daysInStage: 'أيام في المرحلة',
+    paymentProgress: 'تقدم الدفع',
+    measurement: 'القياس',
+    installation: 'التركيب',
+    overdue: 'متأخر',
+    high: 'عالي',
+    medium: 'متوسط',
+    low: 'منخفض',
   },
 
   // Keep legacy "jobs" key for backwards compatibility in backend responses
@@ -475,6 +514,7 @@ export const translations = {
     dueDate: 'تاريخ الاستحقاق',
     paidDate: 'تاريخ الدفع',
     status: 'الحالة',
+    notes: 'ملاحظات',
     totalPaid: 'إجمالي المدفوع',
     totalPending: 'إجمالي المعلق',
     totalOverdue: 'إجمالي المتأخر',

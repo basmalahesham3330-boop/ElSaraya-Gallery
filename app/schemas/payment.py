@@ -11,7 +11,7 @@ from app.enums.payment import PaymentMethod, PaymentStatus, PaymentType
 class PaymentCreate(BaseModel):
     """Create payment for a job."""
 
-    job_id: UUID = Field(..., description="Job UUID")
+    # Note: job_id comes from URL path parameter, not request body
     payment_type: PaymentType = Field(..., description="Payment type (deposit, production, final)")
     payment_method: PaymentMethod = Field(..., description="Payment method (cash, bank_transfer, etc.)")
     percentage: Decimal = Field(..., description="Payment percentage (0-100)", gt=0, le=100)

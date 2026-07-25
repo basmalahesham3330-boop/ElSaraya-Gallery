@@ -33,16 +33,32 @@ export interface Pipeline {
   manufacturing: JobPipelineCard[];
   installation: JobPipelineCard[];
   completed: JobPipelineCard[];
+  postponed: JobPipelineCard[];
   rejected: JobPipelineCard[];
 }
 
 export interface KPIs {
+  // Operational KPIs
   total_active_jobs: number;
-  quotations_waiting_response: number;
+  pending_quotations: number;
   measurements_scheduled_today: number;
   installations_scheduled_today: number;
+  manufacturing_queue: number;
+  completed_last_7_days: number;
+  maintenance_jobs: number;
+  late_manufacturing: number;
   overdue_payments: number;
-  jobs_delayed: number;
+  delayed_projects: number;
+  
+  // Workflow Stage KPIs
+  projects_in_measurement: number;
+  projects_waiting_quotation: number;
+  projects_deposit_paid: number;
+  projects_in_manufacturing: number;
+  projects_in_installation: number;
+  projects_completed: number;
+  projects_postponed: number;
+  projects_rejected: number;
 }
 
 export interface Alert {
