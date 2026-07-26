@@ -187,7 +187,7 @@ async def test_full_lifecycle_happy_path(client: AsyncClient) -> None:
         json={"status": "waiting_for_measurement"},
     )
     assert waiting.status_code == 200
-    assert waiting.json()["status"] == "waiting_for_measurement"
+    assert waiting.json()["quotation"]["status"] == "waiting_for_measurement"
 
     # waiting_for_measurement → measured
     measured = await client.patch(
@@ -195,7 +195,7 @@ async def test_full_lifecycle_happy_path(client: AsyncClient) -> None:
         json={"status": "measured"},
     )
     assert measured.status_code == 200
-    assert measured.json()["status"] == "measured"
+    assert measured.json()["quotation"]["status"] == "measured"
 
     # measured → sent (direct path)
     sent = await client.patch(
@@ -203,7 +203,7 @@ async def test_full_lifecycle_happy_path(client: AsyncClient) -> None:
         json={"status": "sent"},
     )
     assert sent.status_code == 200
-    assert sent.json()["status"] == "sent"
+    assert sent.json()["quotation"]["status"] == "sent"
 
     # sent → approved
     approved = await client.patch(
@@ -211,7 +211,7 @@ async def test_full_lifecycle_happy_path(client: AsyncClient) -> None:
         json={"status": "approved"},
     )
     assert approved.status_code == 200
-    assert approved.json()["status"] == "approved"
+    assert approved.json()["quotation"]["status"] == "approved"
 
     # Terminal: cannot change status from approved
     blocked = await client.patch(
@@ -256,7 +256,7 @@ async def test_negotiation_flow(client: AsyncClient) -> None:
         json={"status": "under_negotiation"},
     )
     assert negotiating.status_code == 200
-    assert negotiating.json()["status"] == "under_negotiation"
+    assert negotiating.json()["quotation"]["status"] == "under_negotiation"
 
     # under_negotiation → sent
     sent = await client.patch(
@@ -264,7 +264,7 @@ async def test_negotiation_flow(client: AsyncClient) -> None:
         json={"status": "sent"},
     )
     assert sent.status_code == 200
-    assert sent.json()["status"] == "sent"
+    assert sent.json()["quotation"]["status"] == "sent"
 
     # sent → under_negotiation (back to negotiation)
     back_to_negotiation = await client.patch(
@@ -272,7 +272,7 @@ async def test_negotiation_flow(client: AsyncClient) -> None:
         json={"status": "under_negotiation"},
     )
     assert back_to_negotiation.status_code == 200
-    assert back_to_negotiation.json()["status"] == "under_negotiation"
+    assert back_to_negotiation.json()["quotation"]["status"] == "under_negotiation"
 
     # under_negotiation → sent (send again)
     resent = await client.patch(
@@ -280,7 +280,7 @@ async def test_negotiation_flow(client: AsyncClient) -> None:
         json={"status": "sent"},
     )
     assert resent.status_code == 200
-    assert resent.json()["status"] == "sent"
+    assert resent.json()["quotation"]["status"] == "sent"
 
     # sent → rejected (customer declines)
     rejected = await client.patch(
@@ -288,7 +288,7 @@ async def test_negotiation_flow(client: AsyncClient) -> None:
         json={"status": "rejected"},
     )
     assert rejected.status_code == 200
-    assert rejected.json()["status"] == "rejected"
+    assert rejected.json()["quotation"]["status"] == "rejected"
 
     # Terminal: cannot change from rejected
     blocked = await client.patch(
@@ -456,7 +456,8 @@ async def test_cancelled_status(client: AsyncClient) -> None:
         json={"status": "cancelled"},
     )
     assert cancel_resp.status_code == 200
-    assert cancel_resp.json()["status"] == "cancelled"
+    response_data = cancel_resp.json()
+    assert response_data["quotation"]["status"] == "cancelled"
     
     # Test 2: under_negotiation → cancelled
     q2 = (
@@ -659,7 +660,7 @@ async def test_measured_to_sent_direct_path(client: AsyncClient) -> None:
         json={"status": "sent"},
     )
     assert resp.status_code == 200
-    assert resp.json()["status"] == "sent"
+    assert resp.json()["quotation"]["status"] == "sent"
 
 
 @pytest.mark.asyncio

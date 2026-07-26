@@ -83,38 +83,35 @@ async def _seed_approved_quotation(client: AsyncClient) -> dict:
         f"/api/v1/quotations/{quotation['id']}/status",
         json={"status": "approved"},
     )
-    approved_quotation = response.json()
+    approval_response = response.json()
     
     return {
         "customer": customer,
         "category": category,
         "product": product,
-        "quotation": approved_quotation,
+        "quotation": approval_response["quotation"],
+        "job": approval_response["job"],  # Job is created automatically
     }
 
 
 @pytest.mark.asyncio
 async def test_create_job_from_approved_quotation(client: AsyncClient) -> None:
-    """Test creating a job from an approved quotation."""
+    """Test that job is created automatically when quotation is approved."""
     seed = await _seed_approved_quotation(client)
     
-    response = await client.post(
-        "/api/v1/jobs",
-        json={
-            "quotation_id": seed["quotation"]["id"],
-            "notes": "Customer wants installation in 2 weeks",
-        },
-    )
+    # Job should be created automatically
+    assert seed["job"] is not None
+    assert seed["job"]["id"] is not None
+    assert seed["job"]["quotation_id"] == seed["quotation"]["id"]
+    assert seed["job"]["status"] == "pending"
     
-    assert response.status_code == 201
+    # Verify job is accessible via GET
+    response = await client.get(f"/api/v1/jobs/{seed['job']['id']}")
+    assert response.status_code == 200
     data = response.json()
+    assert data["id"] == seed["job"]["id"]
     assert data["quotation_id"] == seed["quotation"]["id"]
     assert data["status"] == "pending"
-    assert data["notes"] == "Customer wants installation in 2 weeks"
-    assert data["measurement_date"] is None
-    assert data["production_start"] is None
-    assert "id" in data
-    assert "created_at" in data
 
 
 @pytest.mark.asyncio
@@ -146,35 +143,26 @@ async def test_create_job_from_non_approved_quotation_fails(client: AsyncClient)
 
 @pytest.mark.asyncio
 async def test_duplicate_job_for_quotation_fails(client: AsyncClient) -> None:
-    """Test that creating duplicate job for same quotation fails."""
+    """Test that only one job exists per quotation (created automatically)."""
     seed = await _seed_approved_quotation(client)
     
-    # Create first job
-    response1 = await client.post(
-        "/api/v1/jobs",
-        json={"quotation_id": seed["quotation"]["id"]},
-    )
-    assert response1.status_code == 201
+    # Job already exists (created automatically)
+    assert seed["job"] is not None
     
-    # Try to create second job for same quotation
-    response2 = await client.post(
+    # Try to create another job manually should fail
+    response = await client.post(
         "/api/v1/jobs",
         json={"quotation_id": seed["quotation"]["id"]},
     )
-    assert response2.status_code == 409
-    assert "already exists" in response2.json()["detail"].lower()
+    assert response.status_code == 409
+    assert "already exists" in response.json()["detail"].lower()
 
 
 @pytest.mark.asyncio
 async def test_get_job_by_id(client: AsyncClient) -> None:
     """Test retrieving a job by ID."""
     seed = await _seed_approved_quotation(client)
-    job = (
-        await client.post(
-            "/api/v1/jobs",
-            json={"quotation_id": seed["quotation"]["id"]},
-        )
-    ).json()
+    job = seed["job"]  # Job created automatically
     
     response = await client.get(f"/api/v1/jobs/{job['id']}")
     
@@ -189,12 +177,7 @@ async def test_get_job_by_id(client: AsyncClient) -> None:
 async def test_get_job_by_quotation(client: AsyncClient) -> None:
     """Test retrieving job by quotation ID."""
     seed = await _seed_approved_quotation(client)
-    job = (
-        await client.post(
-            "/api/v1/jobs",
-            json={"quotation_id": seed["quotation"]["id"]},
-        )
-    ).json()
+    job = seed["job"]  # Job created automatically
     
     response = await client.get(f"/api/v1/quotations/{seed['quotation']['id']}/job")
     
@@ -206,10 +189,24 @@ async def test_get_job_by_quotation(client: AsyncClient) -> None:
 
 @pytest.mark.asyncio
 async def test_get_job_by_quotation_returns_null_when_none(client: AsyncClient) -> None:
-    """Test that quotation with no job returns null."""
-    seed = await _seed_approved_quotation(client)
+    """Test that quotation without approval has no job yet."""
+    # Create draft quotation (not approved)
+    unique_suffix = uuid.uuid4().hex[:8]
+    customer = (
+        await client.post(
+            "/api/v1/customers",
+            json={"full_name": f"Test Customer {unique_suffix}", "phone_number": f"0101111{unique_suffix[:4]}"},
+        )
+    ).json()
+    quotation = (
+        await client.post(
+            "/api/v1/quotations",
+            json={"customer_id": customer["id"]},
+        )
+    ).json()
     
-    response = await client.get(f"/api/v1/quotations/{seed['quotation']['id']}/job")
+    # Draft quotation has no job
+    response = await client.get(f"/api/v1/quotations/{quotation['id']}/job")
     
     assert response.status_code == 200
     assert response.json() is None
@@ -219,12 +216,7 @@ async def test_get_job_by_quotation_returns_null_when_none(client: AsyncClient) 
 async def test_update_job_dates(client: AsyncClient) -> None:
     """Test updating job dates and notes."""
     seed = await _seed_approved_quotation(client)
-    job = (
-        await client.post(
-            "/api/v1/jobs",
-            json={"quotation_id": seed["quotation"]["id"]},
-        )
-    ).json()
+    job = seed["job"]  # Job created automatically
     
     response = await client.put(
         f"/api/v1/jobs/{job['id']}",
@@ -248,12 +240,7 @@ async def test_update_job_dates(client: AsyncClient) -> None:
 async def test_update_job_status_workflow(client: AsyncClient) -> None:
     """Test complete job status workflow."""
     seed = await _seed_approved_quotation(client)
-    job = (
-        await client.post(
-            "/api/v1/jobs",
-            json={"quotation_id": seed["quotation"]["id"]},
-        )
-    ).json()
+    job = seed["job"]  # Job created automatically
     
     # pending -> measuring
     response = await client.patch(
@@ -304,12 +291,7 @@ async def test_update_job_status_workflow(client: AsyncClient) -> None:
 async def test_invalid_status_transition_fails(client: AsyncClient) -> None:
     """Test that invalid status transitions are rejected."""
     seed = await _seed_approved_quotation(client)
-    job = (
-        await client.post(
-            "/api/v1/jobs",
-            json={"quotation_id": seed["quotation"]["id"]},
-        )
-    ).json()
+    job = seed["job"]  # Job created automatically
     
     # Try to jump from pending to completed (invalid)
     response = await client.patch(
@@ -325,12 +307,7 @@ async def test_invalid_status_transition_fails(client: AsyncClient) -> None:
 async def test_terminal_status_cannot_be_changed(client: AsyncClient) -> None:
     """Test that terminal statuses cannot be changed."""
     seed = await _seed_approved_quotation(client)
-    job = (
-        await client.post(
-            "/api/v1/jobs",
-            json={"quotation_id": seed["quotation"]["id"]},
-        )
-    ).json()
+    job = seed["job"]  # Job created automatically
     
     # Cancel job
     await client.patch(
@@ -352,12 +329,7 @@ async def test_terminal_status_cannot_be_changed(client: AsyncClient) -> None:
 async def test_terminal_job_cannot_be_edited(client: AsyncClient) -> None:
     """Test that terminal jobs cannot be edited."""
     seed = await _seed_approved_quotation(client)
-    job = (
-        await client.post(
-            "/api/v1/jobs",
-            json={"quotation_id": seed["quotation"]["id"]},
-        )
-    ).json()
+    job = seed["job"]  # Job created automatically
     
     # Cancel job
     await client.patch(
@@ -398,12 +370,7 @@ async def test_list_jobs(client: AsyncClient) -> None:
 async def test_filter_jobs_by_status(client: AsyncClient) -> None:
     """Test filtering jobs by status."""
     seed = await _seed_approved_quotation(client)
-    job = (
-        await client.post(
-            "/api/v1/jobs",
-            json={"quotation_id": seed["quotation"]["id"]},
-        )
-    ).json()
+    job = seed["job"]  # Job created automatically
     
     # Change to measuring
     await client.patch(
@@ -438,12 +405,7 @@ async def test_list_customer_jobs(client: AsyncClient) -> None:
 async def test_job_cancellation_from_any_non_terminal_state(client: AsyncClient) -> None:
     """Test that jobs can be cancelled from any non-terminal status."""
     seed = await _seed_approved_quotation(client)
-    job = (
-        await client.post(
-            "/api/v1/jobs",
-            json={"quotation_id": seed["quotation"]["id"]},
-        )
-    ).json()
+    job = seed["job"]  # Job created automatically
     
     # Move to measuring
     await client.patch(

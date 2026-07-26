@@ -4,6 +4,18 @@ Workflow stage mapping - SINGLE SOURCE OF TRUTH.
 This module contains the canonical workflow stage mapping logic.
 All features (dashboard, KPIs, filters, reports) MUST use these functions.
 DO NOT duplicate this logic elsewhere.
+
+CORRECT BUSINESS WORKFLOW:
+1. Measurements
+2. Quotation
+3. Customer Approval & Deposit Paid (70%)
+4. Manufacturing
+5. Installation
+6. Completed
+
+Terminal states (reachable from any stage):
+- Postponed
+- Cancelled
 """
 from __future__ import annotations
 
@@ -29,13 +41,15 @@ def map_job_to_workflow_stage(job: Job) -> str | None:
     
     **SINGLE SOURCE OF TRUTH** - All KPIs, filters, and visualizations MUST use this.
     
-    Workflow Stages (Pipeline Board columns):
-    - ``quotation``: Jobs pending quotation approval
-    - ``measurement``: Jobs in measuring phase
-    - ``deposit_received``: Deposit paid, waiting to start manufacturing
-    - ``manufacturing``: Currently in production (after deposit paid)
-    - ``installation``: Ready for installation or being installed
-    - ``completed``: Recently completed (last 7 days)
+    CORRECT BUSINESS WORKFLOW:
+    1. ``measurement``: Jobs in measuring phase
+    2. ``quotation``: Jobs pending quotation approval
+    3. ``deposit_received``: Customer approval & deposit paid (70%), waiting to start manufacturing
+    4. ``manufacturing``: Currently in production (after deposit paid)
+    5. ``installation``: Ready for installation or being installed
+    6. ``completed``: Recently completed (last 7 days)
+    
+    Terminal states (reachable from any stage):
     - ``postponed``: Cancelled jobs ONLY
     - ``rejected``: Rejected quotations ONLY
     
@@ -43,6 +57,10 @@ def map_job_to_workflow_stage(job: Job) -> str | None:
         Workflow stage name (str) or None if job should be hidden
     
     Examples:
+        >>> job.status = JobStatus.MEASURING
+        >>> map_job_to_workflow_stage(job)
+        'measurement'
+        
         >>> job.status = JobStatus.PENDING
         >>> map_job_to_workflow_stage(job)
         'quotation'
@@ -118,11 +136,14 @@ def map_job_to_workflow_stage(job: Job) -> str | None:
     return None
 
 
-# Workflow stage labels for UI
+# Workflow stage labels for UI (Arabic)
+# CORRECT BUSINESS WORKFLOW ORDER:
+# 1. Measurements → 2. Quotation → 3. Customer Approval & Deposit Paid (70%)
+# → 4. Manufacturing → 5. Installation → 6. Completed
 WORKFLOW_STAGE_LABELS: dict[str, str] = {
-    "quotation": "عرض السعر",
     "measurement": "القياس",
-    "deposit_received": "دفعة مقدمة",
+    "quotation": "عرض السعر",
+    "deposit_received": "موافقة العميل والعربون (70%)",
     "manufacturing": "التصنيع",
     "installation": "التركيب",
     "completed": "مكتمل",

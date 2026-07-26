@@ -28,7 +28,7 @@ function WorkflowSummary({ job, quotation, payments }: WorkflowSummaryProps) {
       p.payment_type === 'deposit' && p.status === 'paid'
     );
 
-    // Helper: check status order
+    // Helper: check status order (correct business workflow)
     const statusOrder: JobStatus[] = [
       'pending',
       'measuring',
@@ -40,16 +40,9 @@ function WorkflowSummary({ job, quotation, payments }: WorkflowSummaryProps) {
     
     const currentStatusIndex = statusOrder.indexOf(job.status);
 
+    // CORRECT BUSINESS WORKFLOW:
+    // 1. Measurements → 2. Quotation → 3. Customer Approval & Deposit Paid → 4. Manufacturing → 5. Installation → 6. Completed
     const stages: WorkflowStage[] = [
-      {
-        id: 'quotation',
-        name: 'عرض السعر',
-        icon: FileText,
-        status: quotation.status === 'approved' ? 'completed' : 
-                quotation.status === 'rejected' ? 'delayed' : 'current',
-        date: quotation.quotation_date,
-        isOverdue: false,
-      },
       {
         id: 'measurement',
         name: 'القياس',
@@ -59,15 +52,25 @@ function WorkflowSummary({ job, quotation, payments }: WorkflowSummaryProps) {
         isOverdue: !job.measurement_date && currentStatusIndex <= 0,
       },
       {
-        id: 'deposit',
-        name: 'العربون',
-        icon: DollarSign,
-        status: depositPaid ? 'completed' : currentStatusIndex >= 1 ? 'delayed' : 'upcoming',
-        date: payments.find(p => p.payment_type === 'deposit' && p.paid_date)?.paid_date,
-        isOverdue: !depositPaid && currentStatusIndex >= 1,
+        id: 'quotation',
+        name: 'عرض السعر',
+        icon: FileText,
+        status: quotation.status === 'approved' ? 'completed' : 
+                quotation.status === 'rejected' ? 'delayed' : 
+                currentStatusIndex >= 1 ? 'current' : 'upcoming',
+        date: quotation.quotation_date,
+        isOverdue: false,
       },
       {
-        id: 'production',
+        id: 'deposit',
+        name: 'العربون (70%)',
+        icon: DollarSign,
+        status: depositPaid ? 'completed' : currentStatusIndex >= 2 ? 'current' : 'upcoming',
+        date: payments.find(p => p.payment_type === 'deposit' && p.paid_date)?.paid_date,
+        isOverdue: !depositPaid && currentStatusIndex >= 2,
+      },
+      {
+        id: 'manufacturing',
         name: 'التصنيع',
         icon: Package,
         status: currentStatusIndex >= 3 ? 'completed' : currentStatusIndex === 2 ? 'current' : 'upcoming',

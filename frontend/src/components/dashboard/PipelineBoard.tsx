@@ -20,9 +20,10 @@ const columnColors = {
 export default function PipelineBoard({ pipeline }: PipelineBoardProps) {
   const { t } = useTranslation();
 
-  // Dashboard shows 8 workflow columns as requested:
-  // 1. Measurement, 2. Quotation, 3. Deposit Paid, 4. Manufacturing,
-  // 5. Installation, 6. Completed, 7. Postponed, 8. Rejected
+  // CORRECT BUSINESS WORKFLOW - Dashboard shows 8 workflow columns in order:
+  // 1. Measurements → 2. Quotation → 3. Customer Approval & Deposit Paid (70%) → 4. Manufacturing
+  // → 5. Installation → 6. Completed
+  // Terminal states: Postponed, Cancelled (can be reached from any stage)
   // Each job appears in exactly ONE column based on backend logic.
 
   return (
@@ -31,7 +32,7 @@ export default function PipelineBoard({ pipeline }: PipelineBoardProps) {
       
       {/* Grid Layout: 4 columns per row */}
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
-        {/* Row 1 */}
+        {/* Row 1: Main Workflow */}
         <PipelineColumn
           title={t('dashboard.pipeline.measurement')}
           count={pipeline.measurement.length}
@@ -57,7 +58,7 @@ export default function PipelineBoard({ pipeline }: PipelineBoardProps) {
           jobs={pipeline.manufacturing}
         />
         
-        {/* Row 2 */}
+        {/* Row 2: Workflow Completion & Terminal States */}
         <PipelineColumn
           title={t('dashboard.pipeline.installation')}
           count={pipeline.installation.length}

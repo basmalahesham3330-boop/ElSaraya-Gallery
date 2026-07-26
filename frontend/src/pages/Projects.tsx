@@ -138,8 +138,8 @@ export default function Projects() {
                 onChange={(value) => setStatusFilter(value as JobStatus | 'all')}
               >
                 <option value="all">{t('projects.allStatuses')}</option>
-                <option value="pending">{t('jobStatus.pending')}</option>
                 <option value="measuring">{t('jobStatus.measuring')}</option>
+                <option value="pending">{t('jobStatus.pending')}</option>
                 <option value="in_production">{t('jobStatus.in_production')}</option>
                 <option value="ready_for_installation">{t('jobStatus.ready_for_installation')}</option>
                 <option value="installed">{t('jobStatus.installed')}</option>

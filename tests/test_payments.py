@@ -80,15 +80,11 @@ async def _seed_job(client: AsyncClient) -> dict:
         f"/api/v1/quotations/{quotation['id']}/status",
         json={"status": "approved"},
     )
-    approved_quotation = response.json()
+    approval_response = response.json()
     
-    # Create job
-    job = (
-        await client.post(
-            "/api/v1/jobs",
-            json={"quotation_id": approved_quotation["id"]},
-        )
-    ).json()
+    # Job is created automatically when quotation is approved
+    job = approval_response["job"]
+    approved_quotation = approval_response["quotation"]
     
     return {
         "customer": customer,

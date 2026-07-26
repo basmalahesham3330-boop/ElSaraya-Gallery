@@ -1,4 +1,4 @@
-import { Briefcase, FileText, Calendar, Wrench, CreditCard, AlertTriangle } from 'lucide-react';
+import { Briefcase, FileText, Calendar, Wrench, CreditCard, AlertTriangle, Factory, CheckCircle2, AlertCircle, Settings } from 'lucide-react';
 import { useTranslation } from '../../i18n/useTranslation';
 import type { KPIs } from '../../types/dashboard';
 import KPICard from './KPICard';
@@ -11,7 +11,8 @@ export default function KPIGrid({ kpis }: KPIGridProps) {
   const { t } = useTranslation();
 
   return (
-    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+      {/* Row 1: Core Operational KPIs */}
       <KPICard
         label={t('dashboard.kpi.totalActiveJobs')}
         value={kpis.total_active_jobs}
@@ -37,6 +38,26 @@ export default function KPIGrid({ kpis }: KPIGridProps) {
         color="purple"
       />
       <KPICard
+        label={t('dashboard.kpi.manufacturingQueue')}
+        value={kpis.manufacturing_queue}
+        icon={Factory}
+        color="indigo"
+      />
+
+      {/* Row 2: Performance & Alert KPIs */}
+      <KPICard
+        label={t('dashboard.kpi.completedLast7Days')}
+        value={kpis.completed_last_7_days}
+        icon={CheckCircle2}
+        color="green"
+      />
+      <KPICard
+        label={t('dashboard.kpi.lateManufacturing')}
+        value={kpis.late_manufacturing}
+        icon={AlertCircle}
+        color="red"
+      />
+      <KPICard
         label={t('dashboard.kpi.overduePayments')}
         value={kpis.overdue_payments}
         icon={CreditCard}
@@ -47,6 +68,12 @@ export default function KPIGrid({ kpis }: KPIGridProps) {
         value={kpis.delayed_projects}
         icon={AlertTriangle}
         color="orange"
+      />
+      <KPICard
+        label={t('dashboard.kpi.maintenanceJobs')}
+        value={kpis.maintenance_jobs}
+        icon={Settings}
+        color="gray"
       />
     </div>
   );

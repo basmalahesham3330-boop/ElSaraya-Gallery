@@ -34,10 +34,17 @@ class JobPipelineCardDTO(BaseModel):
 
 
 class PipelineDTO(BaseModel):
-    """Pipeline columns with job cards."""
+    """
+    Pipeline columns with job cards.
+    
+    CORRECT BUSINESS WORKFLOW ORDER:
+    1. Measurements → 2. Quotation → 3. Customer Approval & Deposit Paid (70%)
+    → 4. Manufacturing → 5. Installation → 6. Completed
+    Terminal states: Postponed, Cancelled (reachable from any stage)
+    """
 
-    quotation: list[JobPipelineCardDTO] = Field(default_factory=list)
     measurement: list[JobPipelineCardDTO] = Field(default_factory=list)
+    quotation: list[JobPipelineCardDTO] = Field(default_factory=list)
     deposit_received: list[JobPipelineCardDTO] = Field(default_factory=list, alias="depositReceived")
     manufacturing: list[JobPipelineCardDTO] = Field(default_factory=list)
     installation: list[JobPipelineCardDTO] = Field(default_factory=list)

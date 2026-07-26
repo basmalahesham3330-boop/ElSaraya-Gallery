@@ -87,17 +87,21 @@ export const translations = {
       measurementsScheduledToday: 'القياسات اليوم',
       installationsToday: 'التركيبات اليوم',
       installationsScheduledToday: 'التركيبات اليوم',
+      manufacturingQueue: 'طابور التصنيع',
+      completedLast7Days: 'مكتمل في آخر 7 أيام',
+      lateManufacturing: 'دفع عربون ولم يدخل تصنيع',
       overduePayments: 'دفعات متأخرة',
       delayedProjects: 'مشاريع متأخرة',
       projectsDelayed: 'مشاريع متأخرة',
       jobsDelayed: 'مشاريع متأخرة',
+      maintenanceJobs: 'أعمال الصيانة',
     },
     // Pipeline
     pipeline: {
       title: 'سير العمل',
-      quotation: 'عرض السعر',
       measurement: 'القياس',
-      depositReceived: 'استلام العربون',
+      quotation: 'عرض السعر',
+      depositReceived: 'موافقة العميل والعربون (70%)',
       manufacturing: 'التصنيع',
       installation: 'التركيب',
       completed: 'مكتمل',
@@ -333,9 +337,10 @@ export const translations = {
     moreActions: 'المزيد',
     approve: 'اعتماد',
     // Workflow stages
-    waitingCustomer: 'في انتظار العميل',
     measurement: 'القياس',
-    depositReceived: 'استلام العربون',
+    quotation: 'عرض السعر',
+    waitingCustomer: 'في انتظار العميل',
+    depositReceived: 'موافقة العميل والعربون (70%)',
     manufacturing: 'التصنيع',
     installation: 'التركيب',
     rejected: 'مرفوض',
@@ -444,25 +449,26 @@ export const translations = {
   },
 
   // Project Status (formerly Job Status)
+  // Order matches business workflow for better UX
   projectStatus: {
-    pending: 'معلق',
     measuring: 'قيد القياس',
-    in_production: 'قيد الإنتاج',
+    pending: 'ارسال عرض السعر',
+    in_production: 'دفع عربون',
     ready_for_installation: 'جاهز للتركيب',
     installed: 'تم التركيب',
     completed: 'مكتمل',
-    cancelled: 'ملغى',
+    cancelled: 'مؤجل',
   },
 
   // Keep legacy key for backwards compatibility
   jobStatus: {
-    pending: 'معلق',
     measuring: 'قيد القياس',
-    in_production: 'قيد الإنتاج',
+    pending: 'ارسال عرض السعر',
+    in_production: 'دفع عربون',
     ready_for_installation: 'جاهز للتركيب',
     installed: 'تم التركيب',
     completed: 'مكتمل',
-    cancelled: 'ملغى',
+    cancelled: 'مؤجل',
   },
 
   // Measurements

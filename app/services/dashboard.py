@@ -247,10 +247,17 @@ class DashboardService:
         )
 
     def _build_pipeline(self, jobs: list[Job]) -> PipelineDTO:
-        """Map jobs to pipeline stages using centralized workflow mapping."""
+        """
+        Map jobs to pipeline stages using centralized workflow mapping.
+        
+        CORRECT BUSINESS WORKFLOW ORDER:
+        1. measurement → 2. quotation → 3. deposit_received → 4. manufacturing
+        → 5. installation → 6. completed
+        Terminal states: postponed, rejected
+        """
         pipeline: dict[str, list[JobPipelineCardDTO]] = {
-            "quotation": [],
             "measurement": [],
+            "quotation": [],
             "deposit_received": [],
             "manufacturing": [],
             "installation": [],

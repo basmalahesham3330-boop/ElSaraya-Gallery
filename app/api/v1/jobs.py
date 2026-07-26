@@ -70,7 +70,7 @@ async def list_jobs(
     ] = None,
     workflow_stage: Annotated[
         str | None,
-        Query(description="Filter by workflow stage (quotation, measurement, deposit_received, manufacturing, installation, completed, postponed, rejected)"),
+        Query(description="Filter by workflow stage (measurement, quotation, deposit_received, manufacturing, installation, completed, postponed, rejected)"),
     ] = None,
     date_from: Annotated[date | None, Query(description="Inclusive start date")] = None,
     date_to: Annotated[date | None, Query(description="Inclusive end date")] = None,

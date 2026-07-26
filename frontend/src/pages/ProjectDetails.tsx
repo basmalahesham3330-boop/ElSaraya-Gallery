@@ -439,7 +439,7 @@ export default function ProjectDetails() {
     setIsEditingNotes(true);
   };
 
-  const jobStatuses: JobStatus[] = ['pending', 'measuring', 'in_production', 'ready_for_installation', 'installed', 'completed', 'cancelled'];
+  const jobStatuses: JobStatus[] = ['measuring', 'pending', 'in_production', 'ready_for_installation', 'installed', 'completed', 'cancelled'];
   const quotationStatuses: QuotationStatus[] = ['draft', 'waiting_for_measurement', 'measured', 'under_negotiation', 'sent', 'approved', 'rejected', 'cancelled', 'expired'];
 
   const isLoading = isLoadingQuotation || isLoadingJob;
