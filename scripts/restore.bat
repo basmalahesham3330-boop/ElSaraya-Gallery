@@ -42,7 +42,7 @@ if /I not "%CONFIRM%"=="yes" (
 )
 
 REM Check if Docker Compose services are running
-docker compose ps | findstr /C:"erp_postgres" | findstr /C:"running" >nul 2>&1
+docker compose ps | findstr /C:"erp_postgres" | findstr /C:"Up" >nul 2>&1
 if errorlevel 1 (
     echo ERROR: PostgreSQL container is not running!
     echo Start it with: docker compose up -d db

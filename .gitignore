@@ -9,3 +9,8 @@ venv/
 .ruff_cache/
 *.db
 .DS_Store
+
+# Production credentials and sensitive files
+.production-credentials.txt
+*.credentials
+*.secrets
