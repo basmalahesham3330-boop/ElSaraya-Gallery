@@ -19,10 +19,18 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_asyn
 
 from app.core.config import settings
 
+# Configure connection arguments based on environment
+connect_args = {}
+
+# Enable SSL for Railway or production environments
+if settings.is_railway or (settings.APP_ENV == "production" and "railway" in settings.DATABASE_URL.lower()):
+    connect_args["ssl"] = "require"
+
 engine = create_async_engine(
     settings.DATABASE_URL,
     echo=settings.APP_DEBUG,
     pool_pre_ping=True,
+    connect_args=connect_args,
 )
 
 AsyncSessionLocal = async_sessionmaker(
