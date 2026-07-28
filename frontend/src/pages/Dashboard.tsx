@@ -1,5 +1,5 @@
 import { RefreshCw } from 'lucide-react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from '../i18n/useTranslation';
 import { dashboardApi } from '../services/dashboard';
 import LoadingSpinner from '../components/LoadingSpinner';
@@ -11,7 +11,6 @@ import QuotationsWaitingPanel from '../components/dashboard/QuotationsWaitingPan
 
 export default function Dashboard() {
   const { t } = useTranslation();
-  const queryClient = useQueryClient();
 
   const { data, isLoading, error, refetch, isRefetching } = useQuery({
     queryKey: ['dashboard'],

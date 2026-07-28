@@ -487,7 +487,7 @@ export default function MeasurementDetails() {
             </label>
             <Select
               value={itemFormData.quotation_item_id}
-              onChange={(e) => setItemFormData(prev => ({ ...prev, quotation_item_id: e.target.value }))}
+              onChange={(value) => setItemFormData(prev => ({ ...prev, quotation_item_id: value }))}
               required
             >
               <option value="">{t('measurements.selectQuotationItem')}</option>

@@ -338,7 +338,7 @@ export const translations = {
     approve: 'اعتماد',
     // Workflow stages
     measurement: 'القياس',
-    quotation: 'عرض السعر',
+    quotationStage: 'عرض السعر',
     waitingCustomer: 'في انتظار العميل',
     depositReceived: 'موافقة العميل والعربون (70%)',
     manufacturing: 'التصنيع',

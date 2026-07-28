@@ -4,7 +4,7 @@ import {
   Wrench, CheckCircle, Edit, AlertCircle, Clock, User, FileCheck,
   ChevronDown, ChevronUp, ArrowRight
 } from 'lucide-react';
-import type { EnhancedActivityLog, ChangeMetadata } from '../../types/activityLog';
+import type { EnhancedActivityLog } from '../../types/activityLog';
 import { formatDate, formatTime } from '../../utils/formatters';
 import {
   parseChangeMetadata,

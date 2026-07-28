@@ -43,22 +43,24 @@ export function useProjectsData() {
 
   // Enrich jobs with quotation and customer data
   const projects = useMemo(() => {
-    return jobs
-      .map((job) => {
-        const quotation = quotations.find(q => q.id === job.quotation_id);
-        if (!quotation) return null;
+    const enrichedProjects: EnrichedProject[] = [];
+    
+    for (const job of jobs) {
+      const quotation = quotations.find(q => q.id === job.quotation_id);
+      if (!quotation) continue;
 
-        const customer = customers.find(c => c.id === quotation.customer_id);
-        if (!customer) return null;
+      const customer = customers.find(c => c.id === quotation.customer_id);
+      if (!customer) continue;
 
-        return {
-          job,
-          quotation,
-          customer,
-          payments: [], // Will be populated when card is expanded or details viewed
-        };
-      })
-      .filter((p): p is EnrichedProject => p !== null);
+      enrichedProjects.push({
+        job,
+        quotation,
+        customer,
+        payments: [], // Will be populated when card is expanded or details viewed
+      });
+    }
+    
+    return enrichedProjects;
   }, [jobs, quotations, customers]);
 
   const isLoading = isLoadingJobs || isLoadingQuotations || isLoadingCustomers;

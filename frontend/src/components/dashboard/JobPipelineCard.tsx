@@ -1,13 +1,7 @@
-import { User, Clock, Calendar, AlertCircle, Plus } from 'lucide-react';
-import { useState } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
+import { User, Clock, Calendar, AlertCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from '../../i18n/useTranslation';
-import { jobsApi } from '../../services/jobs';
 import type { JobPipelineCard as JobCard } from '../../types/dashboard';
-import Modal from '../Modal';
-import Select from '../Select';
-import Button from '../Button';
 
 interface JobPipelineCardProps {
   data: JobCard;
@@ -26,7 +20,7 @@ const priorityBadgeColors = {
 };
 
 export default function JobPipelineCard({ data }: JobPipelineCardProps) {
-  const { t, dir } = useTranslation();
+  const { t } = useTranslation();
   const navigate = useNavigate();
 
   const priorityClass = priorityColors[data.priority];
@@ -57,7 +51,7 @@ export default function JobPipelineCard({ data }: JobPipelineCardProps) {
         <h4 className="font-semibold text-gray-900 text-sm line-clamp-1" title={data.customer_name}>
           {data.customer_name}
         </h4>
-        <span className={`${priorityBadgeClass} text-xs px-2 py-1 rounded-full whitespace-nowrap ${dir === 'rtl' ? 'mr-2' : 'ml-2'}`}>
+        <span className={`${priorityBadgeClass} text-xs px-2 py-1 rounded-full whitespace-nowrap mr-2`}>
           {data.days_in_stage} {t('dashboard.jobCard.daysInStage')}
         </span>
       </div>

@@ -41,7 +41,7 @@ export default function KPIGrid({ kpis }: KPIGridProps) {
         label={t('dashboard.kpi.manufacturingQueue')}
         value={kpis.manufacturing_queue}
         icon={Factory}
-        color="indigo"
+        color="purple"
       />
 
       {/* Row 2: Performance & Alert KPIs */}
@@ -73,7 +73,7 @@ export default function KPIGrid({ kpis }: KPIGridProps) {
         label={t('dashboard.kpi.maintenanceJobs')}
         value={kpis.maintenance_jobs}
         icon={Settings}
-        color="gray"
+        color="blue"
       />
     </div>
   );

@@ -205,7 +205,7 @@ export default function JobsNew() {
               </label>
               <Select
                 value={statusFilter}
-                onChange={(e) => setStatusFilter((e.target as HTMLSelectElement).value as JobStatus | 'all')}
+                onChange={(value) => setStatusFilter(value as JobStatus | 'all')}
               >
                 <option value="all">{t('projects.allStatuses')}</option>
                 <option value="pending">{t('jobStatus.pending')}</option>
@@ -226,7 +226,7 @@ export default function JobsNew() {
               </label>
               <Select
                 value={sortBy}
-                onChange={(e) => setSortBy((e.target as HTMLSelectElement).value as SortOption)}
+                onChange={(value) => setSortBy(value as SortOption)}
               >
                 <option value="newest">{t('projects.sort.newest')}</option>
                 <option value="oldest">{t('projects.sort.oldest')}</option>

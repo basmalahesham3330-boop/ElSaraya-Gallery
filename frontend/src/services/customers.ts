@@ -29,7 +29,7 @@ export const customersApi = {
 
   // Note: Backend does not support DELETE - customers are never deleted
   // This method is kept for frontend compatibility but will fail if called
-  delete: async (id: string) => {
+  delete: async (_id: string) => {
     throw new Error('Deleting customers is not supported by the backend');
   },
 };

@@ -11,7 +11,7 @@ import Modal from '../components/Modal';
 import { Table, TableHead, TableBody, TableRow, TableHeaderCell, TableCell, EmptyState } from '../components/Table';
 import LoadingSpinner from '../components/LoadingSpinner';
 import Badge from '../components/Badge';
-import type { Product, ProductCategory } from '../types/index';
+import type { Product } from '../types/index';
 
 export default function Products() {
   const { t } = useTranslation();

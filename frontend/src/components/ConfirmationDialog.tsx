@@ -27,12 +27,6 @@ export default function ConfirmationDialog({
   isLoading = false,
   children,
 }: ConfirmationDialogProps) {
-  const variantColors = {
-    danger: 'bg-red-600 hover:bg-red-700',
-    warning: 'bg-yellow-600 hover:bg-yellow-700',
-    info: 'bg-blue-600 hover:bg-blue-700',
-  };
-
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={title} size="md">
       <div className="space-y-4">

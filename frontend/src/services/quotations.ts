@@ -58,7 +58,7 @@ export const quotationsApi = {
   },
 
   // Note: Backend does not support DELETE for quotation items
-  deleteItem: async (itemId: string) => {
+  deleteItem: async (_itemId: string) => {
     throw new Error('Deleting quotation items is not supported by the backend');
   },
 };

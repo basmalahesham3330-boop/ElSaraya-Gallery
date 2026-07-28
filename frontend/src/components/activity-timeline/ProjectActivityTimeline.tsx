@@ -33,7 +33,7 @@ export default function ProjectActivityTimeline({ job, onNavigateToSection }: Pr
       return logs as EnhancedActivityLog[];
     },
     staleTime: 30 * 60 * 1000, // 30 minutes - activity logs are historical
-    cacheTime: 60 * 60 * 1000, // 1 hour cache
+    gcTime: 60 * 60 * 1000, // 1 hour garbage collection time
   });
 
   const handleLoadMore = useCallback(() => {
@@ -42,7 +42,7 @@ export default function ProjectActivityTimeline({ job, onNavigateToSection }: Pr
 
   // Filter and search events
   const filteredEvents = useMemo(() => {
-    let filtered = [...events];
+    let filtered: EnhancedActivityLog[] = [...events];
 
     // Apply category filter
     if (activeFilter !== 'all') {
@@ -125,10 +125,6 @@ export default function ProjectActivityTimeline({ job, onNavigateToSection }: Pr
     setActiveFilter('all');
     setSearchQuery('');
   }, []);
-
-  const visibleRecentEvents = showOlderEvents 
-    ? filteredEvents.length 
-    : Math.min(filteredEvents.length, 10);
 
   if (isLoading) {
     return (

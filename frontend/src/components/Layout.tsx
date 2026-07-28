@@ -5,7 +5,6 @@ import {
   LayoutDashboard,
   Users,
   Package,
-  FileText,
   Briefcase,
   CreditCard,
   Menu,

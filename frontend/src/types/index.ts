@@ -4,8 +4,11 @@ export interface Customer {
   id: string;
   full_name: string;
   phone_number: string;
+  alternative_phone?: string;
   city?: string;
+  governorate?: string;
   address?: string;
+  location_url?: string;
   notes?: string;
   created_at: string;
   updated_at: string;

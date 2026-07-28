@@ -44,7 +44,7 @@ export function formatDate(date: string | Date, format: 'short' | 'long' | 'full
     return '-';
   }
 
-  const options: Intl.DateTimeFormatOptions = {
+  const optionsMap: Record<'short' | 'long' | 'full', Intl.DateTimeFormatOptions> = {
     short: {
       year: 'numeric',
       month: '2-digit',
@@ -61,9 +61,9 @@ export function formatDate(date: string | Date, format: 'short' | 'long' | 'full
       month: 'long',
       day: 'numeric',
     },
-  }[format];
+  };
 
-  return new Intl.DateTimeFormat('ar-EG', options).format(dateObj);
+  return new Intl.DateTimeFormat('ar-EG', optionsMap[format]).format(dateObj);
 }
 
 /**

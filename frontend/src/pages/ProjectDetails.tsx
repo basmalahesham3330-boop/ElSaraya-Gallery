@@ -4,7 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { 
   ArrowLeft, Edit, Plus, Calendar, Package, Wrench, Truck, CheckCircle, 
-  Check, User, Phone, MapPin, FileText, DollarSign, Printer, MoreHorizontal,
+  Check, User, Phone, FileText, DollarSign, Printer, MoreHorizontal,
   X, AlertCircle, Clock, Save, ExternalLink
 } from 'lucide-react';
 import { useTranslation } from '../i18n/useTranslation';
@@ -25,11 +25,10 @@ import Badge from '../components/Badge';
 import PaymentStatusBadge from '../components/PaymentStatusBadge';
 import ConfirmationDialog from '../components/ConfirmationDialog';
 import CollapsibleSection from '../components/CollapsibleSection';
-import InlineEdit from '../components/InlineEdit';
 import ProjectActivityTimeline from '../components/activity-timeline/ProjectActivityTimeline';
 import type { 
-  Job, JobStatus, Quotation, QuotationStatus, QuotationItem,
-  Measurement, Payment, PaymentType, PaymentMethod 
+  Job, JobStatus, QuotationStatus, QuotationItem,
+  Payment, PaymentType, PaymentMethod 
 } from '../types';
 
 export default function ProjectDetails() {
@@ -52,7 +51,7 @@ export default function ProjectDetails() {
   const [selectedItem, setSelectedItem] = useState<QuotationItem | null>(null);
 
   // Collapsible section states
-  const [sectionsOpen, setSectionsOpen] = useState({
+  const sectionsOpen = {
     info: true,
     dates: true,
     workflow: true,
@@ -63,7 +62,7 @@ export default function ProjectDetails() {
     activity: true,
     notes: true,
     documents: false,
-  });
+  };
 
   // Editable states
   const [isEditingNotes, setIsEditingNotes] = useState(false);
@@ -188,7 +187,7 @@ export default function ProjectDetails() {
 
   const updateQuotationStatusMutation = useMutation({
     mutationFn: (status: QuotationStatus) => quotationsApi.updateStatus(activeQuotation!.id, status),
-    onSuccess: () => {
+    onSuccess: (data) => {
       toast.success(t('success.updated'));
       queryClient.invalidateQueries({ queryKey: ['quotations'] });
       queryClient.invalidateQueries({ queryKey: ['jobs'] });
@@ -196,8 +195,8 @@ export default function ProjectDetails() {
       queryClient.invalidateQueries({ queryKey: ['allPayments'] });
       queryClient.invalidateQueries({ queryKey: ['payments'] });
       setIsStatusModalOpen(false);
-      if (response.job) {
-        navigate(`/jobs/${response.job.id}`);
+      if (data.job) {
+        navigate(`/jobs/${data.job.id}`);
       }
     },
     onError: () => toast.error(t('errors.generic')),
@@ -281,11 +280,12 @@ export default function ProjectDetails() {
 
   const createPaymentMutation = useMutation({
     mutationFn: (data: typeof paymentData) => {
-      // Convert empty strings to proper values for backend
+      // Convert strings to numbers for backend
       const payload = {
-        ...data,
-        percentage: data.percentage || '0',
-        amount: data.amount || '0',
+        payment_type: data.payment_type as PaymentType,
+        payment_method: data.payment_method as PaymentMethod,
+        percentage: parseFloat(data.percentage) || 0,
+        amount: parseFloat(data.amount) || 0,
         due_date: data.due_date || undefined,
         paid_date: data.paid_date || undefined,
         notes: data.notes || undefined,

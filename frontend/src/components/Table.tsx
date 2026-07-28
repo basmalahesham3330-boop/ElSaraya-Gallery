@@ -16,6 +16,7 @@ interface TableBodyProps {
 interface TableRowProps {
   children: ReactNode;
   className?: string;
+  onClick?: () => void;
 }
 
 interface TableCellProps {
@@ -46,9 +47,12 @@ export function TableBody({ children }: TableBodyProps) {
   return <tbody className="bg-white divide-y divide-gray-200">{children}</tbody>;
 }
 
-export function TableRow({ children, className = '' }: TableRowProps) {
+export function TableRow({ children, className = '', onClick }: TableRowProps) {
   return (
-    <tr className={`hover:bg-gray-50 transition-colors ${className}`}>
+    <tr 
+      className={`hover:bg-gray-50 transition-colors ${className}`}
+      onClick={onClick}
+    >
       {children}
     </tr>
   );

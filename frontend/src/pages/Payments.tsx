@@ -139,10 +139,7 @@ export default function Payments() {
     if (!selectedJobId) return;
 
     try {
-      // Get the job to determine payment order
-      const jobPayments = await paymentsApi.getJobPayments(selectedJobId, { limit: 100 });
-      const paymentOrder = jobPayments.items.length + 1;
-
+      // Get the job payments (order will be auto-assigned by backend)
       await paymentsApi.create(selectedJobId, {
         payment_type: paymentType,
         payment_method: paymentMethod,
@@ -365,8 +362,8 @@ export default function Payments() {
                   return (
                     <TableRow
                       key={payment.id}
+                      className={`cursor-pointer ${isOverdue ? 'bg-red-50' : ''}`}
                       onClick={() => handleRowClick(payment)}
-                      className={`cursor-pointer hover:bg-gray-50 ${isOverdue ? 'bg-red-50' : ''}`}
                     >
                       <TableCell className="font-medium">#{payment.payment_order}</TableCell>
                       <TableCell>{quotationNumber}</TableCell>

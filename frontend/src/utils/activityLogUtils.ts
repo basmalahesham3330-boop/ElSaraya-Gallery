@@ -126,7 +126,7 @@ function parseDescriptionForChanges(description: string): ChangeMetadata[] {
 /**
  * Detect display type based on field name and value
  */
-function detectDisplayType(field: string, value: any): ChangeMetadata['displayType'] {
+function detectDisplayType(field: string, _value: any): ChangeMetadata['displayType'] {
   const fieldLower = field.toLowerCase();
   
   if (fieldLower.includes('status') || fieldLower.includes('حالة')) {
