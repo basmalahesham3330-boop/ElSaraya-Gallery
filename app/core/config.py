@@ -77,6 +77,9 @@ class Settings(BaseSettings):
                 self.PORT = int(railway_port)
             except (ValueError, TypeError):
                 pass  # Keep default if PORT is invalid
+        
+        # DIAGNOSTIC: Print final configuration
+        self._print_final_config()
 
     @property
     def cors_origins_list(self) -> list[str]:
@@ -91,6 +94,68 @@ class Settings(BaseSettings):
             os.getenv("RAILWAY_ENVIRONMENT") is not None or
             os.getenv("RAILWAY_PROJECT_ID") is not None
         )
+    
+    def _print_final_config(self):
+        """Print final database configuration for diagnostics."""
+        try:
+            from sqlalchemy.engine import make_url
+            
+            print("=" * 60)
+            print("FINAL DATABASE CONFIG")
+            print("=" * 60)
+            
+            # Parse DATABASE_URL
+            try:
+                url_async = make_url(self.DATABASE_URL)
+                print("\nDATABASE_URL (Async - FastAPI):")
+                print(f"  Driver:   {url_async.drivername}")
+                print(f"  Host:     {url_async.host}")
+                print(f"  Port:     {url_async.port}")
+                print(f"  Database: {url_async.database}")
+                print(f"  Username: {url_async.username}")
+            except Exception as e:
+                print(f"\nDATABASE_URL: ERROR parsing: {e}")
+                print(f"  Raw value: {self._mask_password(self.DATABASE_URL)}")
+            
+            # Parse DATABASE_URL_SYNC
+            try:
+                url_sync = make_url(self.DATABASE_URL_SYNC)
+                print("\nDATABASE_URL_SYNC (Sync - Alembic):")
+                print(f"  Driver:   {url_sync.drivername}")
+                print(f"  Host:     {url_sync.host}")
+                print(f"  Port:     {url_sync.port}")
+                print(f"  Database: {url_sync.database}")
+                print(f"  Username: {url_sync.username}")
+            except Exception as e:
+                print(f"\nDATABASE_URL_SYNC: ERROR parsing: {e}")
+                print(f"  Raw value: {self._mask_password(self.DATABASE_URL_SYNC)}")
+            
+            print("\n" + "=" * 60)
+            
+        except ImportError:
+            # Fallback if sqlalchemy not available yet
+            print("=" * 60)
+            print("FINAL DATABASE CONFIG (SQLAlchemy not loaded)")
+            print("=" * 60)
+            print(f"\nDATABASE_URL:      {self._mask_password(self.DATABASE_URL)}")
+            print(f"DATABASE_URL_SYNC: {self._mask_password(self.DATABASE_URL_SYNC)}")
+            print("=" * 60)
+    
+    @staticmethod
+    def _mask_password(url: str) -> str:
+        """Mask password in URL for safe printing."""
+        if not url or '@' not in url:
+            return url
+        try:
+            parts = url.split('@')
+            if '://' in parts[0]:
+                protocol, auth = parts[0].split('://', 1)
+                if ':' in auth:
+                    user, _ = auth.rsplit(':', 1)
+                    return f"{protocol}://{user}:****@{parts[1]}"
+            return url
+        except Exception:
+            return url
 
 
 @lru_cache

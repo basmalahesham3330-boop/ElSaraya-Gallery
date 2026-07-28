@@ -81,6 +81,62 @@ done
 
 echo "PostgreSQL is up - continuing..."
 
+# DIAGNOSTIC: Print environment and DNS information
+echo "=========================================="
+echo "===== ENVIRONMENT VARIABLES ====="
+echo "=========================================="
+
+# Mask passwords in URLs
+if [ -n "$DATABASE_URL" ]; then
+    MASKED_DB_URL=$(echo "$DATABASE_URL" | sed 's/:[^:@]*@/:****@/')
+    echo "DATABASE_URL=$MASKED_DB_URL"
+else
+    echo "DATABASE_URL=(not set)"
+fi
+
+if [ -n "$DATABASE_URL_SYNC" ]; then
+    MASKED_DB_URL_SYNC=$(echo "$DATABASE_URL_SYNC" | sed 's/:[^:@]*@/:****@/')
+    echo "DATABASE_URL_SYNC=$MASKED_DB_URL_SYNC"
+else
+    echo "DATABASE_URL_SYNC=(not set)"
+fi
+
+echo "PGHOST=${PGHOST:-(not set)}"
+echo "PGPORT=${PGPORT:-(not set)}"
+echo "PGDATABASE=${PGDATABASE:-(not set)}"
+echo "PGUSER=${PGUSER:-(not set)}"
+echo ""
+echo "===== DNS RESOLUTION TESTS ====="
+echo "=========================================="
+
+# Test Railway internal hostname
+echo "Testing: postgres.railway.internal"
+if getent hosts postgres.railway.internal 2>/dev/null; then
+    echo "  ✓ SUCCESS: postgres.railway.internal resolves"
+else
+    echo "  ✗ FAILED: postgres.railway.internal does NOT resolve"
+fi
+
+# Test short hostname
+echo "Testing: postgres"
+if getent hosts postgres 2>/dev/null; then
+    echo "  ✓ SUCCESS: postgres resolves"
+else
+    echo "  ✗ FAILED: postgres does NOT resolve"
+fi
+
+# Test with nslookup (more verbose)
+echo ""
+echo "nslookup postgres.railway.internal:"
+nslookup postgres.railway.internal 2>&1 || echo "  (nslookup failed or not available)"
+
+echo ""
+echo "nslookup postgres:"
+nslookup postgres 2>&1 || echo "  (nslookup failed or not available)"
+
+echo "=========================================="
+echo ""
+
 # Run database migrations
 echo "Running database migrations..."
 alembic upgrade head

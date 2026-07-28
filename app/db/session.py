@@ -26,6 +26,27 @@ connect_args = {}
 if settings.is_railway or (settings.APP_ENV == "production" and "railway" in settings.DATABASE_URL.lower()):
     connect_args["ssl"] = "require"
 
+# DIAGNOSTIC: Print FastAPI engine configuration
+print("=" * 60)
+print("FASTAPI ENGINE CONFIG")
+print("=" * 60)
+try:
+    from sqlalchemy.engine import make_url
+    
+    url = make_url(settings.DATABASE_URL)
+    print(f"\nDriver:   {url.drivername}")
+    print(f"Host:     {url.host}")
+    print(f"Port:     {url.port}")
+    print(f"Database: {url.database}")
+    print(f"Username: {url.username}")
+    print(f"SSL enabled: {bool(connect_args.get('ssl'))}")
+    print(f"\nRaw URL (masked): {settings._mask_password(settings.DATABASE_URL)}")
+except Exception as e:
+    print(f"\nERROR parsing DATABASE_URL: {e}")
+    print(f"Raw value (masked): {settings._mask_password(settings.DATABASE_URL)}")
+    print(f"SSL enabled: {bool(connect_args.get('ssl'))}")
+print("=" * 60)
+
 engine = create_async_engine(
     settings.DATABASE_URL,
     echo=settings.APP_DEBUG,
