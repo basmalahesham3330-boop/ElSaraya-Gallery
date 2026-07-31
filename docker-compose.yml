@@ -29,12 +29,11 @@ services:
       args:
         - BUILD_ENV=${APP_ENV:-production}
     container_name: erp_backend
-    restart: unless-stopped
+    # restart: unless-stopped
     env_file:
       - .env
     environment:
       DATABASE_URL: ${DATABASE_URL}
-      DATABASE_URL_SYNC: ${DATABASE_URL_SYNC}
       APP_ENV: ${APP_ENV:-production}
       APP_DEBUG: ${APP_DEBUG:-false}
     ports:
