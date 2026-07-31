@@ -17,13 +17,13 @@ check_database() {
         # Railway or explicit DATABASE_URL provided
         # Parse DATABASE_URL: postgresql://user:pass@host:port/db
         
-        # Extract host (everything between @ and : before /)
-        DB_HOST=$(echo "$DATABASE_URL" | sed -n 's/.*@\([^:]*\).*/\1/p')
+        # Extract host (everything between @ and : or /)
+        DB_HOST=$(echo "$DATABASE_URL" | sed -n 's/.*@\([^:/]*\).*/\1/p')
         
         # Extract port (number after last : and before /)
         DB_PORT=$(echo "$DATABASE_URL" | sed -n 's/.*:\([0-9]*\)\/.*/\1/p')
         
-        # Extract user (between :// and :)
+        # Extract user (between :// and :, handles postgresql+asyncpg:// etc.)
         DB_USER=$(echo "$DATABASE_URL" | sed -n 's/.*:\/\/\([^:]*\):.*/\1/p')
         
         # If parsing failed, try alternative approach
@@ -95,4 +95,9 @@ fi
 # Start the application
 echo "Starting application server..."
 echo "=========================================="
-exec "$@"
+
+# Use Railway's dynamic PORT if set, otherwise default to 8000
+APP_PORT="${PORT:-8000}"
+echo "Binding to port: $APP_PORT"
+
+exec uvicorn app.main:app --host 0.0.0.0 --port "$APP_PORT"
