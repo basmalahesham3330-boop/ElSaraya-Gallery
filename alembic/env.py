@@ -31,25 +31,6 @@ config = context.config
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
-# DIAGNOSTIC: Print Alembic database configuration
-print("=" * 60)
-print("ALEMBIC DATABASE CONFIG")
-print("=" * 60)
-try:
-    from sqlalchemy.engine import make_url
-    
-    url = make_url(settings.DATABASE_URL_SYNC)
-    print(f"\nDriver:   {url.drivername}")
-    print(f"Host:     {url.host}")
-    print(f"Port:     {url.port}")
-    print(f"Database: {url.database}")
-    print(f"Username: {url.username}")
-    print(f"\nRaw URL (masked): {settings._mask_password(settings.DATABASE_URL_SYNC)}")
-except Exception as e:
-    print(f"\nERROR parsing DATABASE_URL_SYNC: {e}")
-    print(f"Raw value (masked): {settings._mask_password(settings.DATABASE_URL_SYNC)}")
-print("=" * 60)
-
 config.set_main_option("sqlalchemy.url", settings.DATABASE_URL_SYNC)
 
 target_metadata = Base.metadata
