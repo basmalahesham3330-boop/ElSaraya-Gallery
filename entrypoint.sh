@@ -9,13 +9,6 @@ echo "=========================================="
 echo "ERP Backend Starting..."
 echo "Environment: ${APP_ENV:-production}"
 echo "=========================================="
-echo "DATABASE_URL exists? -> $([ -n "$DATABASE_URL" ] && echo YES || echo NO)"
-echo "DATABASE_URL_SYNC exists? -> $([ -n "$DATABASE_URL_SYNC" ] && echo YES || echo NO)"
-echo "POSTGRES_HOST=$POSTGRES_HOST"
-echo "POSTGRES_PORT=$POSTGRES_PORT"
-echo "POSTGRES_USER=$POSTGRES_USER"
-echo "=========================================="
-echo "=========================================="
 
 # Function to check database connectivity
 # Works with both Docker Compose (individual vars) and Railway (DATABASE_URL)
@@ -87,6 +80,7 @@ until check_database; do
 done
 
 echo "PostgreSQL is up - continuing..."
+echo "=========================================="
 
 # Run database migrations
 echo "Running database migrations..."
@@ -100,11 +94,12 @@ else
 fi
 
 # Start the application
-echo "Starting application server..."
 echo "=========================================="
+echo "Starting application server..."
 
 # Use Railway's dynamic PORT if set, otherwise default to 8000
 APP_PORT="${PORT:-8000}"
 echo "Binding to port: $APP_PORT"
+echo "=========================================="
 
 exec uvicorn app.main:app --host 0.0.0.0 --port "$APP_PORT"
