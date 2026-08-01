@@ -9,6 +9,13 @@ echo "=========================================="
 echo "ERP Backend Starting..."
 echo "Environment: ${APP_ENV:-production}"
 echo "=========================================="
+echo "DATABASE_URL exists? -> $([ -n "$DATABASE_URL" ] && echo YES || echo NO)"
+echo "DATABASE_URL_SYNC exists? -> $([ -n "$DATABASE_URL_SYNC" ] && echo YES || echo NO)"
+echo "POSTGRES_HOST=$POSTGRES_HOST"
+echo "POSTGRES_PORT=$POSTGRES_PORT"
+echo "POSTGRES_USER=$POSTGRES_USER"
+echo "=========================================="
+echo "=========================================="
 
 # Function to check database connectivity
 # Works with both Docker Compose (individual vars) and Railway (DATABASE_URL)
